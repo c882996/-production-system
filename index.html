@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>偉晟工業 生產日報系統</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang TC','Microsoft JhengHei',sans-serif;background:#f0f2f5;color:#222;min-height:100vh}
+/* NAV */
+#nav{background:#1a3a5c;color:#fff;padding:0;display:flex;align-items:stretch;flex-wrap:wrap}
+#nav .logo{padding:14px 20px;font-size:16px;font-weight:700;color:#fff;border-right:1px solid rgba(255,255,255,0.1)}
+#nav .logo span{font-size:11px;display:block;color:rgba(255,255,255,0.6);font-weight:400}
+.nav-tabs{display:flex;flex:1;flex-wrap:wrap}
+.nav-tab{padding:14px 16px;font-size:13px;cursor:pointer;color:rgba(255,255,255,0.7);border-bottom:3px solid transparent;transition:all 0.15s;white-space:nowrap}
+.nav-tab:hover{color:#fff;background:rgba(255,255,255,0.05)}
+.nav-tab.active{color:#fff;border-bottom-color:#4da6ff}
+/* MAIN */
+#content{max-width:1200px;margin:0 auto;padding:20px 16px}
+.page{display:none}
+.page.active{display:block}
+/* CARDS */
+.page-title{font-size:18px;font-weight:700;margin-bottom:16px;color:#1a3a5c}
+.card{background:#fff;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;color:#888;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{border:1px solid #ddd;border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;color:#222;transition:border 0.15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#4da6ff}
+.btn{border:none;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.15s;font-weight:500}
+.btn-primary{background:#1a3a5c;color:#fff}.btn-primary:hover{background:#244d7a}
+.btn-success{background:#2d7a3a;color:#fff}.btn-success:hover{background:#3a9649}
+.btn-danger{background:#c0392b;color:#fff}.btn-danger:hover{background:#e74c3c}
+.btn-warning{background:#d97706;color:#fff}.btn-warning:hover{background:#f59e0b}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-export{background:#217346;color:#fff}.btn-export:hover{background:#2a8f58}
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f5f7fa;color:#555;font-weight:600;padding:9px 10px;text-align:left;border-bottom:1px solid #e5e7eb;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:hover td{background:#fafbff}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-yellow{background:#fef9c3;color:#854d0e}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-gray{background:#f3f4f6;color:#4b5563}
+/* ROW ITEMS */
+.row-item{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap}
+.row-item .form-group{flex:1;min-width:120px}
+.row-item .btn-danger{flex-shrink:0;align-self:flex-end;margin-bottom:1px}
+/* STATUS PROGRESS */
+.progress-bar{display:flex;gap:4px;margin-top:6px}
+.prog-step{flex:1;height:6px;border-radius:3px;background:#e5e7eb}
+.prog-step.done{background:#22c55e}
+.prog-step.partial{background:#f59e0b}
+/* OVERVIEW CARDS */
+.overview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.ov-card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #4da6ff}
+.ov-card.green{border-top-color:#22c55e}
+.ov-card.yellow{border-top-color:#f59e0b}
+.ov-card.red{border-top-color:#ef4444}
+.ov-card .num{font-size:28px;font-weight:700;color:#1a3a5c}
+.ov-card .lbl{font-size:12px;color:#888;margin-top:2px}
+/* MODAL */
+#modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center}
+#modal-bg.open{display:flex}
+#modal{background:#fff;border-radius:12px;padding:24px;width:90%;max-width:700px;max-height:90vh;overflow-y:auto}
+#modal h3{font-size:16px;margin-bottom:16px;color:#1a3a5c}
+.modal-footer{margin-top:16px;display:flex;gap:8px;justify-content:flex-end}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#1a3a5c;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity 0.3s;z-index:200;pointer-events:none}
+#toast.show{opacity:1}
+/* DATE FILTER */
+.filter-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.filter-row .form-group{min-width:140px}
+/* DETAIL TABLE */
+.detail-section{margin-top:12px}
+.detail-section h4{font-size:13px;color:#555;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #eee}
+/* EMPTY */
+.empty{text-align:center;color:#aaa;padding:40px;font-size:14px}
+</style>
+</head>
+<body>
+
+<div id="nav">
+  <div class="logo">偉晟工業<span>生產日報系統</span></div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('overview')">📊 生管總覽</div>
+    <div class="nav-tab" onclick="showPage('orders')">📋 生產流程單</div>
+    <div class="nav-tab" onclick="showPage('assembly')">🌳 組樹日報</div>
+    <div class="nav-tab" onclick="showPage('dewax')">🔥 脫蠟日報</div>
+    <div class="nav-tab" onclick="showPage('casting')">⚙️ 鑄造日報</div>
+    <div class="nav-tab" onclick="showPage('shipping')">🚚 出貨日報</div>
+  </div>
+</div>
+
+<div id="content">
+
+<!-- 生管總覽 -->
+<div class="page active" id="page-overview">
+  <div class="page-title">生管總覽</div>
+  <div class="filter-row">
+    <div class="form-group"><label>選擇日期</label><input type="date" id="ov-date"></div>
+    <button class="btn btn-primary" onclick="loadOverview()">查詢</button>
+    <button class="btn btn-export" onclick="exportExcel()">📥 匯出 Excel</button>
+  </div>
+  <div class="overview-grid" id="ov-stats"></div>
+  <div class="card">
+    <div class="table-wrap">
+      <table id="ov-table">
+        <thead><tr>
+          <th>批號</th><th>客戶</th><th>品名</th><th>材質</th><th>規格</th>
+          <th>訂購數量</th><th>交貨日期</th>
+          <th>組樹</th><th>脫蠟</th><th>鑄造</th><th>出貨</th><th>狀態</th>
+        </tr></thead>
+        <tbody id="ov-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 生產流程單 -->
+<div class="page" id="page-orders">
+  <div class="page-title">生產流程單管理</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-weight:600;color:#1a3a5c">新增流程單</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>批號 *</label><input id="ord-batch" placeholder="如 416"></div>
+      <div class="form-group"><label>客戶 *</label><input id="ord-customer" placeholder="如 QC"></div>
+      <div class="form-group"><label>品名 *</label><input id="ord-product" placeholder="如 HR-84"></div>
+      <div class="form-group"><label>商標</label><input id="ord-brand" placeholder="如 真/百"></div>
+      <div class="form-group"><label>規格</label><input id="ord-spec" placeholder="如 本拌"></div>
+      <div class="form-group"><label>材質</label><input id="ord-material" placeholder="如 304"></div>
+      <div class="form-group"><label>串數</label><input id="ord-string" type="number" placeholder="如 50"></div>
+      <div class="form-group"><label>訂購數量</label><input id="ord-qty" type="number" placeholder="如 100"></div>
+      <div class="form-group"><label>交貨日期</label><input id="ord-duedate" type="date"></div>
+      <div class="form-group"><label>備註</label><input id="ord-note" placeholder="備註"></div>
+    </div>
+    <button class="btn btn-success" onclick="saveOrder()">＋ 新增流程單</button>
+  </div>
+  <div class="card">
+    <div class="filter-row">
+      <div class="form-group"><label>搜尋批號/品名</label><input id="ord-search" placeholder="輸入關鍵字" oninput="loadOrders()"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>批號</th><th>客戶</th><th>品名</th><th>商標</th><th>規格</th><th>材質</th>
+          <th>串數</th><th>訂購量</th><th>交貨日</th><th>備註</th><th>操作</th>
+        </tr></thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 組樹日報 -->
+<div class="page" id="page-assembly">
+  <div class="page-title">組樹日報表</div>
+  <div class="card">
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <div class="form-group"><label>日期 *</label><input type="date" id="asm-date"></div>
+    </div>
+    <div id="asm-rows"></div>
+    <button class="btn btn-primary btn-sm" onclick="addAsmRow()" style="margin-bottom:12px">＋ 新增行</button>
+    <br>
+    <div class="form-group" style="max-width:400px;margin-bottom:12px">
+      <label>備註</label><textarea id="asm-note" rows="2" placeholder="備註"></textarea>
+    </div>
+    <button class="btn btn-success" onclick="saveReport('assembly')">儲存日報表</button>
+  </div>
+  <div class="card">
+    <div class="filter-row">
+      <div class="form-group"><label>查詢日期</label><input type="date" id="asm-search-date"></div>
+      <button class="btn btn-primary" onclick="loadReport('assembly')">查詢</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日期</th><th>批號</th><th>客戶</th><th>品名</th><th>商標</th><th>規格</th><th>材質</th><th>串數</th><th>組樹數</th><th>總計</th><th>操作</th></tr></thead>
+        <tbody id="asm-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 脫蠟日報 -->
+<div class="page" id="page-dewax">
+  <div class="page-title">脫蠟日報表</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group"><label>日期 *</label><input type="date" id="dw-date"></div>
+      <div class="form-group"><label>操作員</label><input id="dw-operator" placeholder="操作員姓名"></div>
+    </div>
+    <div id="dw-rows"></div>
+    <button class="btn btn-primary btn-sm" onclick="addDwRow()" style="margin-bottom:12px">＋ 新增行</button>
+    <br>
+    <div class="form-group" style="max-width:400px;margin-bottom:12px">
+      <label>備註</label><textarea id="dw-note" rows="2" placeholder="備註"></textarea>
+    </div>
+    <button class="btn btn-success" onclick="saveReport('dewax')">儲存日報表</button>
+  </div>
+  <div class="card">
+    <div class="filter-row">
+      <div class="form-group"><label>查詢日期</label><input type="date" id="dw-search-date"></div>
+      <button class="btn btn-primary" onclick="loadReport('dewax')">查詢</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日期</th><th>批號</th><th>客戶</th><th>品名</th><th>規格</th><th>材質</th><th>操作員</th><th>收入數量</th><th>報廢數量</th><th>移出數量</th><th>操作</th></tr></thead>
+        <tbody id="dw-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 鑄造日報 -->
+<div class="page" id="page-casting">
+  <div class="page-title">鑄造日報表</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group"><label>日期 *</label><input type="date" id="cs-date"></div>
+    </div>
+    <div id="cs-rows"></div>
+    <button class="btn btn-primary btn-sm" onclick="addCsRow()" style="margin-bottom:12px">＋ 新增行</button>
+    <br>
+    <div class="form-group" style="max-width:400px;margin-bottom:12px">
+      <label>備註</label><textarea id="cs-note" rows="2" placeholder="備註"></textarea>
+    </div>
+    <button class="btn btn-success" onclick="saveReport('casting')">儲存日報表</button>
+  </div>
+  <div class="card">
+    <div class="filter-row">
+      <div class="form-group"><label>查詢日期</label><input type="date" id="cs-search-date"></div>
+      <button class="btn btn-primary" onclick="loadReport('casting')">查詢</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日期</th><th>客戶</th><th>爐次</th><th>批號</th><th>品名</th><th>材質</th><th>模頭號碼</th><th>良數</th><th>不良數</th><th>殼模溫度</th><th>鋼水溫度</th><th>操作</th></tr></thead>
+        <tbody id="cs-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 出貨日報 -->
+<div class="page" id="page-shipping">
+  <div class="page-title">出貨日報表</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group"><label>日期 *</label><input type="date" id="sh-date"></div>
+    </div>
+    <div id="sh-rows"></div>
+    <button class="btn btn-primary btn-sm" onclick="addShRow()" style="margin-bottom:12px">＋ 新增行</button>
+    <br>
+    <div class="form-group" style="max-width:400px;margin-bottom:12px">
+      <label>備註</label><textarea id="sh-note" rows="2" placeholder="備註"></textarea>
+    </div>
+    <button class="btn btn-success" onclick="saveReport('shipping')">儲存日報表</button>
+  </div>
+  <div class="card">
+    <div class="filter-row">
+      <div class="form-group"><label>查詢日期</label><input type="date" id="sh-search-date"></div>
+      <button class="btn btn-primary" onclick="loadReport('shipping')">查詢</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日期</th><th>批號</th><th>客戶</th><th>商標</th><th>品名</th><th>材質</th><th>規格</th><th>數量</th><th>總計</th><th>件數</th><th>運送方式</th><th>操作</th></tr></thead>
+        <tbody id="sh-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- Modal -->
+<div id="modal-bg">
+  <div id="modal">
+    <h3 id="modal-title">編輯</h3>
+    <div id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-success" id="modal-save-btn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://vxibeqpilbxrubgourjf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_1tpzuvOZhMJfK1SWHxiM0A_PoJg5ccL';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── INIT DB TABLES (via SQL through REST is not possible; we just use insert and let supabase auto-create via dashboard)
+// Tables needed: orders, assembly_reports, dewax_reports, casting_reports, shipping_reports
+
+// ── PAGE NAV ──
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if(id==='overview') loadOverview();
+  if(id==='orders') loadOrders();
+}
+
+// ── TOAST ──
+function toast(msg,dur=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ── TODAY ──
+function today(){ return new Date().toISOString().slice(0,10); }
+document.getElementById('ov-date').value=today();
+
+// ══════════════════════════════
+// ORDERS
+// ══════════════════════════════
+async function saveOrder(){
+  const batch=document.getElementById('ord-batch').value.trim();
+  const customer=document.getElementById('ord-customer').value.trim();
+  const product=document.getElementById('ord-product').value.trim();
+  if(!batch||!customer||!product){toast('請填寫批號、客戶、品名');return;}
+  const row={
+    batch_no:batch, customer, product_name:product,
+    brand:document.getElementById('ord-brand').value.trim(),
+    spec:document.getElementById('ord-spec').value.trim(),
+    material:document.getElementById('ord-material').value.trim(),
+    string_count:parseInt(document.getElementById('ord-string').value)||null,
+    order_qty:parseInt(document.getElementById('ord-qty').value)||null,
+    due_date:document.getElementById('ord-duedate').value||null,
+    note:document.getElementById('ord-note').value.trim(),
+    created_at:new Date().toISOString()
+  };
+  const {error}=await sb.from('orders').insert(row);
+  if(error){toast('❌ 儲存失敗: '+error.message);return;}
+  toast('✅ 流程單已儲存');
+  ['ord-batch','ord-customer','ord-product','ord-brand','ord-spec','ord-material','ord-string','ord-qty','ord-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ord-duedate').value='';
+  loadOrders();
+}
+
+async function loadOrders(){
+  const q=document.getElementById('ord-search').value.trim();
+  let query=sb.from('orders').select('*').order('created_at',{ascending:false});
+  if(q) query=query.or(`batch_no.ilike.%${q}%,product_name.ilike.%${q}%,customer.ilike.%${q}%`);
+  const {data,error}=await query;
+  if(error){toast('載入失敗');return;}
+  const tb=document.getElementById('orders-tbody');
+  if(!data||data.length===0){tb.innerHTML='<tr><td colspan="11" class="empty">尚無資料</td></tr>';return;}
+  tb.innerHTML=data.map(r=>`<tr>
+    <td><b>${r.batch_no}</b></td><td>${r.customer}</td><td>${r.product_name}</td>
+    <td>${r.brand||''}</td><td>${r.spec||''}</td><td>${r.material||''}</td>
+    <td>${r.string_count||''}</td><td>${r.order_qty||''}</td>
+    <td>${r.due_date||''}</td><td>${r.note||''}</td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-warning btn-sm" onclick="editOrder('${r.id}')">編輯</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteRow('orders','${r.id}',loadOrders)">刪除</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function editOrder(id){
+  const {data}=await sb.from('orders').select('*').eq('id',id).single();
+  if(!data) return;
+  document.getElementById('modal-title').textContent='編輯流程單';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="form-grid">
+      <div class="form-group"><label>批號</label><input id="e-batch" value="${data.batch_no}"></div>
+      <div class="form-group"><label>客戶</label><input id="e-customer" value="${data.customer}"></div>
+      <div class="form-group"><label>品名</label><input id="e-product" value="${data.product_name}"></div>
+      <div class="form-group"><label>商標</label><input id="e-brand" value="${data.brand||''}"></div>
+      <div class="form-group"><label>規格</label><input id="e-spec" value="${data.spec||''}"></div>
+      <div class="form-group"><label>材質</label><input id="e-material" value="${data.material||''}"></div>
+      <div class="form-group"><label>串數</label><input id="e-string" type="number" value="${data.string_count||''}"></div>
+      <div class="form-group"><label>訂購數量</label><input id="e-qty" type="number" value="${data.order_qty||''}"></div>
+      <div class="form-group"><label>交貨日期</label><input id="e-due" type="date" value="${data.due_date||''}"></div>
+      <div class="form-group"><label>備註</label><input id="e-note" value="${data.note||''}"></div>
+    </div>`;
+  document.getElementById('modal-save-btn').onclick=async()=>{
+    const {error}=await sb.from('orders').update({
+      batch_no:document.getElementById('e-batch').value,
+      customer:document.getElementById('e-customer').value,
+      product_name:document.getElementById('e-product').value,
+      brand:document.getElementById('e-brand').value,
+      spec:document.getElementById('e-spec').value,
+      material:document.getElementById('e-material').value,
+      string_count:parseInt(document.getElementById('e-string').value)||null,
+      order_qty:parseInt(document.getElementById('e-qty').value)||null,
+      due_date:document.getElementById('e-due').value||null,
+      note:document.getElementById('e-note').value
+    }).eq('id',id);
+    if(error){toast('❌ 更新失敗');return;}
+    toast('✅ 已更新'); closeModal(); loadOrders();
+  };
+  openModal();
+}
+
+// ══════════════════════════════
+// DYNAMIC ROWS
+// ══════════════════════════════
+function asmRowHTML(i){
+  return `<div class="row-item" id="asm-row-${i}">
+    <div class="form-group"><label>批號</label><input class="asm-batch" placeholder="批號" oninput="fillFromBatch(this,'asm',${i})"></div>
+    <div class="form-group"><label>客戶</label><input class="asm-customer" placeholder="客戶"></div>
+    <div class="form-group"><label>品名</label><input class="asm-product" placeholder="品名"></div>
+    <div class="form-group"><label>商標</label><input class="asm-brand" placeholder="商標"></div>
+    <div class="form-group"><label>規格</label><input class="asm-spec" placeholder="規格"></div>
+    <div class="form-group"><label>材質</label><input class="asm-material" placeholder="材質"></div>
+    <div class="form-group" style="min-width:70px"><label>串數</label><input class="asm-string" type="number" placeholder="串數"></div>
+    <div class="form-group" style="min-width:80px"><label>組樹數</label><input class="asm-assembly" type="number" placeholder="組樹數"></div>
+    <div class="form-group" style="min-width:70px"><label>總計</label><input class="asm-total" type="number" placeholder="總計"></div>
+    <button class="btn btn-danger btn-sm" onclick="removeRow('asm-row-${i}')">✕</button>
+  </div>`;
+}
+
+function dwRowHTML(i){
+  return `<div class="row-item" id="dw-row-${i}">
+    <div class="form-group"><label>批號</label><input class="dw-batch" placeholder="批號" oninput="fillFromBatch(this,'dw',${i})"></div>
+    <div class="form-group"><label>客戶</label><input class="dw-customer" placeholder="客戶"></div>
+    <div class="form-group"><label>品名</label><input class="dw-product" placeholder="品名"></div>
+    <div class="form-group"><label>規格</label><input class="dw-spec" placeholder="規格"></div>
+    <div class="form-group"><label>商標</label><input class="dw-brand" placeholder="商標"></div>
+    <div class="form-group"><label>材質</label><input class="dw-material" placeholder="材質"></div>
+    <div class="form-group" style="min-width:80px"><label>收入數量</label><input class="dw-in" placeholder="如 20/100"></div>
+    <div class="form-group" style="min-width:80px"><label>報廢數量</label><input class="dw-scrap" placeholder="如 0/3"></div>
+    <div class="form-group" style="min-width:80px"><label>移出數量</label><input class="dw-out" placeholder="如 20/97"></div>
+    <button class="btn btn-danger btn-sm" onclick="removeRow('dw-row-${i}')">✕</button>
+  </div>`;
+}
+
+function csRowHTML(i){
+  return `<div class="row-item" id="cs-row-${i}">
+    <div class="form-group"><label>客戶</label><input class="cs-customer" placeholder="客戶"></div>
+    <div class="form-group" style="min-width:60px"><label>爐次</label><input class="cs-furnace" placeholder="爐次"></div>
+    <div class="form-group"><label>批號</label><input class="cs-batch" placeholder="批號" oninput="fillFromBatch(this,'cs',${i})"></div>
+    <div class="form-group"><label>品名</label><input class="cs-product" placeholder="品名"></div>
+    <div class="form-group"><label>材質</label><input class="cs-material" placeholder="材質"></div>
+    <div class="form-group"><label>模頭號碼</label><input class="cs-mold" placeholder="模頭號碼"></div>
+    <div class="form-group" style="min-width:70px"><label>良數</label><input class="cs-good" placeholder="良數"></div>
+    <div class="form-group" style="min-width:70px"><label>不良數</label><input class="cs-bad" placeholder="不良數"></div>
+    <div class="form-group" style="min-width:80px"><label>殼模溫度</label><input class="cs-shell-temp" placeholder="如 1080"></div>
+    <div class="form-group" style="min-width:80px"><label>鋼水溫度</label><input class="cs-water-temp" placeholder="如 1580"></div>
+    <button class="btn btn-danger btn-sm" onclick="removeRow('cs-row-${i}')">✕</button>
+  </div>`;
+}
+
+function shRowHTML(i){
+  return `<div class="row-item" id="sh-row-${i}">
+    <div class="form-group"><label>批號</label><input class="sh-batch" placeholder="批號" oninput="fillFromBatch(this,'sh',${i})"></div>
+    <div class="form-group"><label>客戶</label><input class="sh-customer" placeholder="客戶"></div>
+    <div class="form-group"><label>商標</label><input class="sh-brand" placeholder="商標"></div>
+    <div class="form-group"><label>品名</label><input class="sh-product" placeholder="品名"></div>
+    <div class="form-group"><label>材質</label><input class="sh-material" placeholder="材質"></div>
+    <div class="form-group"><label>規格</label><input class="sh-spec" placeholder="規格"></div>
+    <div class="form-group" style="min-width:80px"><label>數量</label><input class="sh-qty" placeholder="數量"></div>
+    <div class="form-group" style="min-width:70px"><label>總計</label><input class="sh-total" placeholder="總計"></div>
+    <div class="form-group" style="min-width:60px"><label>件數</label><input class="sh-pieces" placeholder="件數"></div>
+    <div class="form-group"><label>運送方式</label><input class="sh-transport" placeholder="如 陳自送"></div>
+    <button class="btn btn-danger btn-sm" onclick="removeRow('sh-row-${i}')">✕</button>
+  </div>`;
+}
+
+let asmCount=0,dwCount=0,csCount=0,shCount=0;
+function addAsmRow(){document.getElementById('asm-rows').insertAdjacentHTML('beforeend',asmRowHTML(asmCount++));}
+function addDwRow(){document.getElementById('dw-rows').insertAdjacentHTML('beforeend',dwRowHTML(dwCount++));}
+function addCsRow(){document.getElementById('cs-rows').insertAdjacentHTML('beforeend',csRowHTML(csCount++));}
+function addShRow(){document.getElementById('sh-rows').insertAdjacentHTML('beforeend',shRowHTML(shCount++));}
+function removeRow(id){const el=document.getElementById(id);if(el)el.remove();}
+
+// Auto-fill from batch
+async function fillFromBatch(input, prefix, i){
+  const batch=input.value.trim();
+  if(batch.length<2) return;
+  const {data}=await sb.from('orders').select('*').eq('batch_no',batch).maybeSingle();
+  if(!data) return;
+  const row=document.getElementById(prefix+'-row-'+i);
+  if(!row) return;
+  const set=(cls,val)=>{const el=row.querySelector('.'+prefix+'-'+cls);if(el&&val) el.value=val;};
+  set('customer',data.customer); set('product',data.product_name);
+  set('brand',data.brand); set('spec',data.spec); set('material',data.material);
+  set('string',data.string_count);
+}
+
+// ══════════════════════════════
+// SAVE REPORTS
+// ══════════════════════════════
+async function saveReport(type){
+  let rows=[], dateVal='', noteVal='', extraFields={};
+  if(type==='assembly'){
+    dateVal=document.getElementById('asm-date').value;
+    noteVal=document.getElementById('asm-note').value;
+    document.querySelectorAll('#asm-rows .row-item').forEach(row=>{
+      const g=cls=>row.querySelector('.asm-'+cls)?.value.trim()||'';
+      if(!g('batch')&&!g('product')) return;
+      rows.push({report_date:dateVal,batch_no:g('batch'),customer:g('customer'),product_name:g('product'),brand:g('brand'),spec:g('spec'),material:g('material'),string_count:parseInt(g('string'))||null,assembly_count:parseInt(g('assembly'))||null,total:parseInt(g('total'))||null,note:noteVal});
+    });
+  } else if(type==='dewax'){
+    dateVal=document.getElementById('dw-date').value;
+    noteVal=document.getElementById('dw-note').value;
+    const op=document.getElementById('dw-operator').value.trim();
+    document.querySelectorAll('#dw-rows .row-item').forEach(row=>{
+      const g=cls=>row.querySelector('.dw-'+cls)?.value.trim()||'';
+      if(!g('batch')&&!g('product')) return;
+      rows.push({report_date:dateVal,batch_no:g('batch'),customer:g('customer'),product_name:g('product'),spec:g('spec'),brand:g('brand'),material:g('material'),operator:op,qty_in:g('in'),qty_scrap:g('scrap'),qty_out:g('out'),note:noteVal});
+    });
+  } else if(type==='casting'){
+    dateVal=document.getElementById('cs-date').value;
+    noteVal=document.getElementById('cs-note').value;
+    document.querySelectorAll('#cs-rows .row-item').forEach(row=>{
+      const g=cls=>row.querySelector('.cs-'+cls)?.value.trim()||'';
+      if(!g('batch')&&!g('product')) return;
+      rows.push({report_date:dateVal,customer:g('customer'),furnace_no:g('furnace'),batch_no:g('batch'),product_name:g('product'),material:g('material'),mold_no:g('mold'),good_count:g('good'),bad_count:g('bad'),shell_temp:g('shell-temp'),water_temp:g('water-temp'),note:noteVal});
+    });
+  } else if(type==='shipping'){
+    dateVal=document.getElementById('sh-date').value;
+    noteVal=document.getElementById('sh-note').value;
+    document.querySelectorAll('#sh-rows .row-item').forEach(row=>{
+      const g=cls=>row.querySelector('.sh-'+cls)?.value.trim()||'';
+      if(!g('batch')&&!g('product')) return;
+      rows.push({report_date:dateVal,batch_no:g('batch'),customer:g('customer'),brand:g('brand'),product_name:g('product'),material:g('material'),spec:g('spec'),quantity:g('qty'),total:g('total'),pieces:g('pieces'),transport:g('transport'),note:noteVal});
+    });
+  }
+  if(!dateVal){toast('請選擇日期');return;}
+  if(rows.length===0){toast('請至少新增一行資料');return;}
+  const tableMap={assembly:'assembly_reports',dewax:'dewax_reports',casting:'casting_reports',shipping:'shipping_reports'};
+  const {error}=await sb.from(tableMap[type]).insert(rows);
+  if(error){toast('❌ 儲存失敗: '+error.message);console.error(error);return;}
+  toast('✅ 日報表已儲存');
+  document.getElementById(type==='assembly'?'asm-rows':type==='dewax'?'dw-rows':type==='casting'?'cs-rows':'sh-rows').innerHTML='';
+  loadReport(type);
+}
+
+// ══════════════════════════════
+// LOAD REPORTS
+// ══════════════════════════════
+async function loadReport(type){
+  const dateMap={assembly:'asm-search-date',dewax:'dw-search-date',casting:'cs-search-date',shipping:'sh-search-date'};
+  const tbodyMap={assembly:'asm-tbody',dewax:'dw-tbody',casting:'cs-tbody',shipping:'sh-tbody'};
+  const tableMap={assembly:'assembly_reports',dewax:'dewax_reports',casting:'casting_reports',shipping:'shipping_reports'};
+  const dateVal=document.getElementById(dateMap[type]).value;
+  let query=sb.from(tableMap[type]).select('*').order('report_date',{ascending:false});
+  if(dateVal) query=query.eq('report_date',dateVal);
+  const {data,error}=await query.limit(200);
+  if(error){toast('載入失敗');return;}
+  const tb=document.getElementById(tbodyMap[type]);
+  if(!data||data.length===0){tb.innerHTML='<tr><td colspan="12" class="empty">尚無資料</td></tr>';return;}
+  if(type==='assembly'){
+    tb.innerHTML=data.map(r=>`<tr>
+      <td>${r.report_date}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.product_name||''}</td>
+      <td>${r.brand||''}</td><td>${r.spec||''}</td><td>${r.material||''}</td>
+      <td>${r.string_count||''}</td><td>${r.assembly_count||''}</td><td>${r.total||''}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-warning btn-sm" onclick="editReport('assembly_reports','${r.id}')">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRow('assembly_reports','${r.id}',()=>loadReport('assembly'))">刪除</button>
+      </td></tr>`).join('');
+  } else if(type==='dewax'){
+    tb.innerHTML=data.map(r=>`<tr>
+      <td>${r.report_date}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.product_name||''}</td>
+      <td>${r.spec||''}</td><td>${r.material||''}</td><td>${r.operator||''}</td>
+      <td>${r.qty_in||''}</td><td>${r.qty_scrap||''}</td><td>${r.qty_out||''}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-warning btn-sm" onclick="editReport('dewax_reports','${r.id}')">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRow('dewax_reports','${r.id}',()=>loadReport('dewax'))">刪除</button>
+      </td></tr>`).join('');
+  } else if(type==='casting'){
+    tb.innerHTML=data.map(r=>`<tr>
+      <td>${r.report_date}</td><td>${r.customer||''}</td><td>${r.furnace_no||''}</td><td>${r.batch_no||''}</td>
+      <td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.mold_no||''}</td>
+      <td>${r.good_count||''}</td><td>${r.bad_count||''}</td><td>${r.shell_temp||''}</td><td>${r.water_temp||''}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-warning btn-sm" onclick="editReport('casting_reports','${r.id}')">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRow('casting_reports','${r.id}',()=>loadReport('casting'))">刪除</button>
+      </td></tr>`).join('');
+  } else if(type==='shipping'){
+    tb.innerHTML=data.map(r=>`<tr>
+      <td>${r.report_date}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.brand||''}</td>
+      <td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.spec||''}</td>
+      <td>${r.quantity||''}</td><td>${r.total||''}</td><td>${r.pieces||''}</td><td>${r.transport||''}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-warning btn-sm" onclick="editReport('shipping_reports','${r.id}')">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRow('shipping_reports','${r.id}',()=>loadReport('shipping'))">刪除</button>
+      </td></tr>`).join('');
+  }
+}
+
+// ══════════════════════════════
+// EDIT REPORT ROW
+// ══════════════════════════════
+async function editReport(table, id){
+  const {data}=await sb.from(table).select('*').eq('id',id).single();
+  if(!data) return;
+  const fields={
+    assembly_reports:[['report_date','日期','date'],['batch_no','批號','text'],['customer','客戶','text'],['product_name','品名','text'],['brand','商標','text'],['spec','規格','text'],['material','材質','text'],['string_count','串數','number'],['assembly_count','組樹數','number'],['total','總計','number']],
+    dewax_reports:[['report_date','日期','date'],['batch_no','批號','text'],['customer','客戶','text'],['product_name','品名','text'],['spec','規格','text'],['brand','商標','text'],['material','材質','text'],['operator','操作員','text'],['qty_in','收入數量','text'],['qty_scrap','報廢數量','text'],['qty_out','移出數量','text']],
+    casting_reports:[['report_date','日期','date'],['customer','客戶','text'],['furnace_no','爐次','text'],['batch_no','批號','text'],['product_name','品名','text'],['material','材質','text'],['mold_no','模頭號碼','text'],['good_count','良數','text'],['bad_count','不良數','text'],['shell_temp','殼模溫度','text'],['water_temp','鋼水溫度','text']],
+    shipping_reports:[['report_date','日期','date'],['batch_no','批號','text'],['customer','客戶','text'],['brand','商標','text'],['product_name','品名','text'],['material','材質','text'],['spec','規格','text'],['quantity','數量','text'],['total','總計','text'],['pieces','件數','text'],['transport','運送方式','text']]
+  };
+  const fs=fields[table]||[];
+  document.getElementById('modal-title').textContent='編輯資料';
+  document.getElementById('modal-body').innerHTML=`<div class="form-grid">${fs.map(([k,l,t])=>`<div class="form-group"><label>${l}</label><input id="ef-${k}" type="${t}" value="${data[k]||''}"></div>`).join('')}</div>`;
+  document.getElementById('modal-save-btn').onclick=async()=>{
+    const updates={};
+    fs.forEach(([k])=>{updates[k]=document.getElementById('ef-'+k).value||null;});
+    const {error}=await sb.from(table).update(updates).eq('id',id);
+    if(error){toast('❌ 更新失敗');return;}
+    toast('✅ 已更新'); closeModal();
+    const typeMap={assembly_reports:'assembly',dewax_reports:'dewax',casting_reports:'casting',shipping_reports:'shipping'};
+    loadReport(typeMap[table]);
+  };
+  openModal();
+}
+
+// ══════════════════════════════
+// DELETE
+// ══════════════════════════════
+async function deleteRow(table, id, callback){
+  if(!confirm('確定要刪除這筆資料？')) return;
+  const {error}=await sb.from(table).delete().eq('id',id);
+  if(error){toast('❌ 刪除失敗');return;}
+  toast('已刪除'); if(callback) callback();
+}
+
+// ══════════════════════════════
+// OVERVIEW
+// ══════════════════════════════
+async function loadOverview(){
+  const dateVal=document.getElementById('ov-date').value;
+  // Load all orders + daily reports
+  const [{data:orders},{data:asm},{data:dw},{data:cs},{data:sh}]=await Promise.all([
+    sb.from('orders').select('*').order('due_date',{ascending:true}),
+    sb.from('assembly_reports').select('*').eq('report_date',dateVal),
+    sb.from('dewax_reports').select('*').eq('report_date',dateVal),
+    sb.from('casting_reports').select('*').eq('report_date',dateVal),
+    sb.from('shipping_reports').select('*').eq('report_date',dateVal),
+  ]);
+  // Stats
+  const statsEl=document.getElementById('ov-stats');
+  statsEl.innerHTML=`
+    <div class="ov-card"><div class="num">${orders?.length||0}</div><div class="lbl">總流程單數</div></div>
+    <div class="ov-card green"><div class="num">${asm?.length||0}</div><div class="lbl">${dateVal} 組樹筆數</div></div>
+    <div class="ov-card yellow"><div class="num">${dw?.length||0}</div><div class="lbl">${dateVal} 脫蠟筆數</div></div>
+    <div class="ov-card"><div class="num">${cs?.length||0}</div><div class="lbl">${dateVal} 鑄造筆數</div></div>
+    <div class="ov-card red"><div class="num">${sh?.length||0}</div><div class="lbl">${dateVal} 出貨筆數</div></div>`;
+  // Table: one row per order, show daily progress
+  const asmMap={}, dwMap={}, csMap={}, shMap={};
+  (asm||[]).forEach(r=>{if(r.batch_no) asmMap[r.batch_no]=(asmMap[r.batch_no]||0)+(r.assembly_count||0);});
+  (dw||[]).forEach(r=>{if(r.batch_no) dwMap[r.batch_no]=r.qty_out||'✓';});
+  (cs||[]).forEach(r=>{if(r.batch_no) csMap[r.batch_no]=(csMap[r.batch_no]||0)+(parseInt(r.good_count)||0);});
+  (sh||[]).forEach(r=>{if(r.batch_no) shMap[r.batch_no]=(shMap[r.batch_no]||0)+(parseInt(r.quantity)||0);});
+  const tbody=document.getElementById('ov-tbody');
+  if(!orders||orders.length===0){tbody.innerHTML='<tr><td colspan="12" class="empty">尚無流程單</td></tr>';return;}
+  tbody.innerHTML=orders.map(r=>{
+    const asmV=asmMap[r.batch_no]||'';
+    const dwV=dwMap[r.batch_no]||'';
+    const csV=csMap[r.batch_no]||'';
+    const shV=shMap[r.batch_no]||'';
+    const done=[asmV,dwV,csV,shV].filter(v=>v).length;
+    const isLate=r.due_date&&r.due_date<dateVal&&!shV;
+    const statusBadge=isLate?'<span class="badge badge-red">逾期</span>':done===4?'<span class="badge badge-green">完成</span>':done>0?'<span class="badge badge-yellow">進行中</span>':'<span class="badge badge-gray">未開始</span>';
+    return `<tr style="${isLate?'background:#fff5f5':''}">
+      <td><b>${r.batch_no}</b></td><td>${r.customer}</td><td>${r.product_name}</td>
+      <td>${r.material||''}</td><td>${r.spec||''}</td><td>${r.order_qty||''}</td>
+      <td>${r.due_date||''}</td>
+      <td>${asmV?'<span class="badge badge-green">'+asmV+'</span>':'<span class="badge badge-gray">—</span>'}</td>
+      <td>${dwV?'<span class="badge badge-green">'+dwV+'</span>':'<span class="badge badge-gray">—</span>'}</td>
+      <td>${csV?'<span class="badge badge-green">'+csV+'</span>':'<span class="badge badge-gray">—</span>'}</td>
+      <td>${shV?'<span class="badge badge-green">'+shV+'</span>':'<span class="badge badge-gray">—</span>'}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════
+// EXPORT EXCEL
+// ══════════════════════════════
+async function exportExcel(){
+  const dateVal=document.getElementById('ov-date').value;
+  const [{data:orders},{data:asm},{data:dw},{data:cs},{data:sh}]=await Promise.all([
+    sb.from('orders').select('*'),
+    sb.from('assembly_reports').select('*').eq('report_date',dateVal),
+    sb.from('dewax_reports').select('*').eq('report_date',dateVal),
+    sb.from('casting_reports').select('*').eq('report_date',dateVal),
+    sb.from('shipping_reports').select('*').eq('report_date',dateVal),
+  ]);
+  const wb=XLSX.utils.book_new();
+  const toSheet=(data,headers,keys)=>{
+    const rows=[headers,...(data||[]).map(r=>keys.map(k=>r[k]||''))];
+    return XLSX.utils.aoa_to_sheet(rows);
+  };
+  XLSX.utils.book_append_sheet(wb,toSheet(orders,['批號','客戶','品名','商標','規格','材質','串數','訂購數量','交貨日期','備註'],['batch_no','customer','product_name','brand','spec','material','string_count','order_qty','due_date','note']),'流程單');
+  XLSX.utils.book_append_sheet(wb,toSheet(asm,['日期','批號','客戶','品名','商標','規格','材質','串數','組樹數','總計'],['report_date','batch_no','customer','product_name','brand','spec','material','string_count','assembly_count','total']),'組樹');
+  XLSX.utils.book_append_sheet(wb,toSheet(dw,['日期','批號','客戶','品名','規格','材質','操作員','收入','報廢','移出'],['report_date','batch_no','customer','product_name','spec','material','operator','qty_in','qty_scrap','qty_out']),'脫蠟');
+  XLSX.utils.book_append_sheet(wb,toSheet(cs,['日期','客戶','爐次','批號','品名','材質','模頭','良數','不良數','殼模溫度','鋼水溫度'],['report_date','customer','furnace_no','batch_no','product_name','material','mold_no','good_count','bad_count','shell_temp','water_temp']),'鑄造');
+  XLSX.utils.book_append_sheet(wb,toSheet(sh,['日期','批號','客戶','商標','品名','材質','規格','數量','總計','件數','運送方式'],['report_date','batch_no','customer','brand','product_name','material','spec','quantity','total','pieces','transport']),'出貨');
+  XLSX.writeFile(wb,`生產日報_${dateVal}.xlsx`);
+  toast('✅ Excel 已下載');
+}
+
+// ══════════════════════════════
+// MODAL
+// ══════════════════════════════
+function openModal(){document.getElementById('modal-bg').classList.add('open');}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target===document.getElementById('modal-bg')) closeModal();});
+
+// ── INIT ──
+addAsmRow(); addDwRow(); addCsRow(); addShRow();
+document.getElementById('asm-date').value=today();
+document.getElementById('dw-date').value=today();
+document.getElementById('cs-date').value=today();
+document.getElementById('sh-date').value=today();
+document.getElementById('asm-search-date').value=today();
+document.getElementById('dw-search-date').value=today();
+document.getElementById('cs-search-date').value=today();
+document.getElementById('sh-search-date').value=today();
+loadOverview();
+</script>
+</body>
+</html>
