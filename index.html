@@ -54,6 +54,10 @@ tr:hover td{background:#fafbff}
 .badge-gray{background:#f3f4f6;color:#4b5563}
 .badge-purple{background:#ede9fe;color:#5b21b6}
 .badge-orange{background:#fed7aa;color:#9a3412}
+.badge-urgent{background:#ef4444;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+.urgent-row{background:#fff5f5!important}
+.auto-fill{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:3px 8px;font-size:11px;color:#166534;display:inline-block;margin-bottom:4px}
 .item-row{background:#f8fafc;border:1px solid #e8ecf0;border-radius:8px;padding:14px;margin-bottom:12px}
 .item-row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
 .item-row-num{font-size:12px;font-weight:700;color:#1a3a5c;background:#dbeafe;padding:2px 8px;border-radius:10px}
@@ -155,6 +159,11 @@ tr:hover td{background:#fafbff}
       <div class="form-group"><label>訂單號碼</label><input id="ord-orderno" placeholder="如 1150601"></div>
       <div class="form-group"><label>訂購日期</label><input id="ord-orderdate" type="date"></div>
       <div class="form-group"><label>交貨日期</label><input id="ord-due" type="date"></div>
+      <div class="form-group" style="justify-content:flex-end"><label style="color:transparent">急件</label>
+        <label class="check-item" style="border-color:#e03;background:#fff5f5" id="urgent-label">
+          <input type="checkbox" id="ord-urgent" onchange="document.getElementById('urgent-label').classList.toggle('checked',this.checked)"> 🚨 急件
+        </label>
+      </div>
     </div>
     <div style="margin-bottom:10px">
       <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:6px">附件需求</div>
@@ -202,7 +211,16 @@ tr:hover td{background:#fafbff}
       <div class="form-group"><label>一串幾個</label><input id="pr-perstring" type="number" placeholder="如 4"></div>
       <div class="form-group"><label>單重(g)</label><input id="pr-unitweight" placeholder="單重"></div>
       <div class="form-group"><label>串重(g)</label><input id="pr-stringweight" placeholder="串重"></div>
-      <div class="form-group"><label>殼層數</label><input id="pr-layers" type="number" placeholder="層數"></div>
+      <div class="form-group"><label>殼層數</label>
+        <select id="pr-layers" onchange="toggleLayerCustom(this)">
+          <option value="">— 選擇 —</option>
+          <option value="4半">4半</option>
+          <option value="5半">5半</option>
+          <option value="6半">6半</option>
+          <option value="custom">自行輸入</option>
+        </select>
+        <input id="pr-layers-custom" placeholder="自行輸入層數" style="display:none;margin-top:4px" onchange="this.dataset.val=this.value">
+      </div>
       <div class="form-group"><label>燒結溫度</label><input id="pr-shelltemp" placeholder="如 1080"></div>
       <div class="form-group"><label>鋼水溫度</label><input id="pr-watertemp" placeholder="如 1580"></div>
       <div class="form-group" style="grid-column:span 2">
@@ -220,7 +238,10 @@ tr:hover td{background:#fafbff}
           <option value="不需整型">不需整型</option>
           <option value="要整型+有模">要整型＋有整型模</option>
           <option value="要整型+無模">要整型＋無整型模</option>
+          <option value="要整型+合治具">要整型＋合治具</option>
+          <option value="純合治具">純合治具</option>
         </select>
+        <input id="pr-shaping-note" placeholder="整型備註（選填）" style="margin-top:4px">
       </div>
       <div class="form-group" style="grid-column:span 4">
         <label>層數注意事項</label>
@@ -259,6 +280,7 @@ tr:hover td{background:#fafbff}
   <div class="card">
     <div class="filter-row">
       <div class="form-group"><label>查詢日期</label><input type="date" id="asm-qdate"></div>
+      <div class="form-group"><label>搜尋批號/品名</label><input id="asm-qsearch" placeholder="批號或品名" oninput="loadDailyReport('assembly')" ></div>
       <button class="btn btn-primary" onclick="loadDailyReport('assembly')">查詢</button>
     </div>
     <div class="table-wrap"><table>
@@ -287,6 +309,7 @@ tr:hover td{background:#fafbff}
   <div class="card">
     <div class="filter-row">
       <div class="form-group"><label>查詢日期</label><input type="date" id="dw-qdate"></div>
+      <div class="form-group"><label>搜尋批號/品名</label><input id="dw-qsearch" placeholder="批號或品名" oninput="loadDailyReport('dewax')" ></div>
       <button class="btn btn-primary" onclick="loadDailyReport('dewax')">查詢</button>
     </div>
     <div class="table-wrap"><table>
@@ -314,6 +337,7 @@ tr:hover td{background:#fafbff}
   <div class="card">
     <div class="filter-row">
       <div class="form-group"><label>查詢日期</label><input type="date" id="cs-qdate"></div>
+      <div class="form-group"><label>搜尋批號/品名</label><input id="cs-qsearch" placeholder="批號或品名" oninput="loadDailyReport('casting')" ></div>
       <button class="btn btn-primary" onclick="loadDailyReport('casting')">查詢</button>
     </div>
     <div class="table-wrap"><table>
@@ -340,6 +364,7 @@ tr:hover td{background:#fafbff}
   <div class="card">
     <div class="filter-row">
       <div class="form-group"><label>查詢日期</label><input type="date" id="sh-qdate"></div>
+      <div class="form-group"><label>搜尋批號/品名</label><input id="sh-qsearch" placeholder="批號或品名" oninput="loadDailyReport('shipping')" ></div>
       <button class="btn btn-primary" onclick="loadDailyReport('shipping')">查詢</button>
     </div>
     <div class="table-wrap"><table>
@@ -365,6 +390,21 @@ const SURL='https://vxibeqpilbxrubgourjf.supabase.co';
 const SKEY='sb_publishable_1tpzuvOZhMJfK1SWHxiM0A_PoJg5ccL';
 const sb=supabase.createClient(SURL,SKEY);
 function today(){return new Date().toISOString().slice(0,10);}
+function toROC(dateStr){
+  if(!dateStr) return '';
+  const d=new Date(dateStr);
+  if(isNaN(d)) return dateStr;
+  return (d.getFullYear()-1911)+'/'+(d.getMonth()+1)+'/'+(d.getDate());
+}
+
+
+function toROC(dateStr){
+  if(!dateStr) return '';
+  const d=new Date(dateStr);
+  if(isNaN(d)) return dateStr;
+  return (d.getFullYear()-1911)+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0');
+}
+
 function toast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='show'+(type?' '+type:'');
@@ -382,6 +422,10 @@ function showPage(id,el){
 document.querySelectorAll('.check-item input').forEach(cb=>{
   cb.addEventListener('change',()=>cb.closest('.check-item').classList.toggle('checked',cb.checked));
 });
+function toggleLayerCustom(sel){
+  const c=document.getElementById('pr-layers-custom');
+  if(c) c.style.display=sel.value==='custom'?'block':'none';
+}
 function toggleGrindCustom(selId,customId){
   const sel=document.getElementById(selId);
   const custom=document.getElementById(customId);
@@ -406,8 +450,10 @@ async function saveProduct(){
     unit_weight:document.getElementById('pr-unitweight').value.trim(),
     string_weight:document.getElementById('pr-stringweight').value.trim(),
     layer_count:parseInt(document.getElementById('pr-layers').value)||null,
+    layer_count:document.getElementById('pr-layers').value==='custom'?document.getElementById('pr-layers-custom').value.trim():document.getElementById('pr-layers').value,
     layer_note:document.getElementById('pr-layernote').value.trim(),
     note:document.getElementById('pr-note').value.trim(),
+    shaping_note:document.getElementById('pr-shaping-note').value.trim(),
     shell_temp:document.getElementById('pr-shelltemp').value.trim(),
     water_temp:document.getElementById('pr-watertemp').value.trim(),
     grinding_method:grindVal,
@@ -416,9 +462,11 @@ async function saveProduct(){
   });
   if(error){toast('儲存失敗: '+error.message,'error');return;}
   toast('✅ 產品已新增');
-  ['pr-customer','pr-product','pr-material','pr-mold','pr-perstring','pr-unitweight','pr-stringweight','pr-layers','pr-layernote','pr-note','pr-shelltemp','pr-watertemp','pr-grind-custom'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['pr-customer','pr-product','pr-material','pr-mold','pr-perstring','pr-unitweight','pr-stringweight','pr-layers-custom','pr-layernote','pr-note','pr-shaping-note','pr-shelltemp','pr-watertemp','pr-grind-custom'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('pr-grind').value='';document.getElementById('pr-shaping').value='不需整型';
   document.getElementById('pr-grind-custom').style.display='none';
+  document.getElementById('pr-layers').value='';
+  document.getElementById('pr-layers-custom').style.display='none';
   loadProducts();
 }
 
@@ -444,12 +492,12 @@ async function loadProducts(){
       </div>
       <div class="customer-body">
         <div class="table-wrap"><table>
-          <thead><tr><th>品名</th><th>材質</th><th>模頭號</th><th>一串幾個</th><th>單重</th><th>串重</th><th>殼層數</th><th>研磨方式</th><th>整型需求</th><th>燒結溫度</th><th>鋼水溫度</th><th>層數注意</th><th>備註</th><th>操作</th></tr></thead>
+          <thead><tr><th>品名</th><th>材質</th><th>模頭號</th><th>一串幾個</th><th>單重</th><th>串重</th><th>殼層數</th><th>研磨方式</th><th>整型需求</th><th>整型備註</th><th>燒結溫度</th><th>鋼水溫度</th><th>層數注意</th><th>備註</th><th>操作</th></tr></thead>
           <tbody>${prods.map(p=>`<tr>
             <td><b>${p.product_name}</b></td><td>${p.material||''}</td><td>${p.mold_no||''}</td><td>${p.per_string||''}</td>
             <td>${p.unit_weight||''}</td><td>${p.string_weight||''}</td><td>${p.layer_count||''}</td>
             <td>${p.grinding_method||''}</td>
-            <td>${p.need_shaping==='不需整型'?'<span class="badge badge-gray">✕</span>':p.need_shaping==='要整型+有模'?'<span class="badge badge-green">有模</span>':'<span class="badge badge-yellow">無模</span>'}</td>
+            <td>${(()=>{const m={'不需整型':'<span class="badge badge-gray">✕</span>','要整型+有模':'<span class="badge badge-green">有模</span>','要整型+無模':'<span class="badge badge-yellow">無模</span>','要整型+合治具':'<span class="badge badge-blue">合治具</span>','純合治具':'<span class="badge badge-purple">純合治具</span>'};return m[p.need_shaping]||'<span class="badge badge-gray">✕</span>';})()}</td>
             <td>${p.shell_temp||''}</td><td>${p.water_temp||''}</td>
             <td style="max-width:140px;font-size:11px">${p.layer_note||''}</td>
             <td style="max-width:160px;font-size:11px;color:#555">${p.note||''}</td>
@@ -500,6 +548,8 @@ async function editProduct(id){
           <option value="不需整型" ${p.need_shaping==='不需整型'?'selected':''}>不需整型</option>
           <option value="要整型+有模" ${p.need_shaping==='要整型+有模'?'selected':''}>要整型＋有整型模</option>
           <option value="要整型+無模" ${p.need_shaping==='要整型+無模'?'selected':''}>要整型＋無整型模</option>
+          <option value="要整型+合治具" ${p.need_shaping==='要整型+合治具'?'selected':''}>要整型＋合治具</option>
+          <option value="純合治具" ${p.need_shaping==='純合治具'?'selected':''}>純合治具</option>
         </select>
       </div>
       <div class="form-group" style="grid-column:span 4"><label>層數注意事項</label><textarea id="ep-layernote" rows="2">${p.layer_note||''}</textarea></div>
@@ -591,7 +641,10 @@ function addOrdItem(){
             <option value="不需整型">不需整型</option>
             <option value="要整型+有模">要整型＋有整型模</option>
             <option value="要整型+無模">要整型＋無整型模</option>
+            <option value="要整型+合治具">要整型＋合治具</option>
+            <option value="純合治具">純合治具</option>
           </select>
+          <input class="oi-shaping-note" placeholder="整型備註" style="margin-top:4px">
         </div>
         <div class="form-group"><label>委外</label><input class="oi-outsource" placeholder="無則留空"></div>
         <div class="form-group" style="grid-column:span 3"><label>層數注意事項</label><textarea class="oi-layernote" rows="2"></textarea></div>
@@ -612,7 +665,9 @@ async function saveOrder(){
     due_date:document.getElementById('ord-due').value||null,
     order_date:document.getElementById('ord-orderdate').value||null,
     docs_required:docs,heat_treatment:heat,
+    is_urgent:document.getElementById('ord-urgent').checked,
     note:document.getElementById('ord-note').value.trim(),
+    is_urgent:document.getElementById('ord-urgent').checked,
     created_at:new Date().toISOString()
   }).select().single();
   if(e1){toast('儲存失敗: '+e1.message,'error');return;}
@@ -645,6 +700,7 @@ async function saveOrder(){
   toast('✅ 流程單已儲存');
   ['ord-batch','ord-customer','ord-orderno','ord-due','ord-orderdate','ord-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ord-items').innerHTML='';
+  document.getElementById('ord-urgent').checked=false;
   document.querySelectorAll('#chk-docs input,#chk-heat input').forEach(c=>{c.checked=false;c.closest('.check-item').classList.remove('checked');});
   ordItemCount=0;currentProducts=[];loadOrders();
 }
@@ -662,12 +718,13 @@ async function loadOrders(){
     const docB=(ord.docs_required||[]).map(d=>`<span class="badge badge-blue">${docL[d]||d}</span>`).join(' ');
     const heatB=(ord.heat_treatment||[]).map(h=>`<span class="badge badge-yellow">${heatL[h]||h}</span>`).join(' ');
     const rows=(ord.order_items||[]).map(it=>{
-      const shBadge=it.need_shaping==='不需整型'?'<span class="badge badge-gray">✕</span>':it.need_shaping==='要整型+有模'?'<span class="badge badge-green">有模</span>':'<span class="badge badge-yellow">無模</span>';
+      const shapingMap={'不需整型':'<span class="badge badge-gray">✕</span>','要整型+有模':'<span class="badge badge-green">有模</span>','要整型+無模':'<span class="badge badge-yellow">無模</span>','要整型+合治具':'<span class="badge badge-blue">合治具</span>','純合治具':'<span class="badge badge-purple">純合治具</span>'};
+        const shBadge=shapingMap[it.need_shaping]||'<span class="badge badge-gray">✕</span>';
       return `<tr>
         <td><b>${it.product_name||''}</b></td><td>${it.brand||''}</td><td>${it.material||''}</td>
         <td>${it.order_qty||''}/${it.prod_qty||''}</td>
         <td>${[it.mold_no,it.per_string].filter(Boolean).join('/')}</td>
-        <td>${it.string_count||''}</td><td>${it.layer_count||''}</td><td>${it.furnace_no||''}</td>
+        <td>${it.string_count||''}</td><td>${it.furnace_no||''}</td><td>${it.layer_count||''}</td>
         <td>${it.grinding_method||''}</td><td>${shBadge}</td>
         <td>${it.outsource||'<span class="badge badge-gray">✕</span>'}</td>
         <td>${it.shell_temp||''}</td><td>${it.water_temp||''}</td>
@@ -678,7 +735,8 @@ async function loadOrders(){
     return `<div class="card" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div>
-          <b style="font-size:16px;color:#1a3a5c">批號 ${ord.batch_no}</b>
+          ${ord.is_urgent?'<span class="badge badge-urgent">🚨 急件</span> ':''}<b style="font-size:16px;color:#1a3a5c">批號 ${ord.batch_no}</b>
+          ${ord.is_urgent?'<span class="badge badge-red" style="font-size:13px;margin-left:6px">🚨 急件</span>':''}
           <span style="margin-left:10px">${ord.customer}</span>
           ${ord.order_no?`<span style="margin-left:10px;font-size:12px;color:#888">訂單：${ord.order_no}</span>`:''}
           ${ord.due_date?`<span style="margin-left:10px;font-size:12px;color:#c00">交期：${ord.due_date}</span>`:''}
@@ -692,7 +750,7 @@ async function loadOrders(){
       </div>
       <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap">${docB}${heatB}</div>
       <div class="table-wrap"><table>
-        <thead><tr><th>品名</th><th>商標</th><th>材質</th><th>訂購/生產</th><th>方案</th><th>串數</th><th>殼層數</th><th>爐號</th><th>研磨</th><th>整型</th><th>委外</th><th>燒結℃</th><th>鋼水℃</th><th>備註</th><th>操作</th></tr></thead>
+        <thead><tr><th>品名</th><th>商標</th><th>材質</th><th>訂購/生產</th><th>方案</th><th>串數</th><th>爐號</th><th>殼層數</th><th>研磨</th><th>整型</th><th>委外</th><th>燒結℃</th><th>鋼水℃</th><th>備註</th><th>操作</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
       ${ord.note?`<div style="margin-top:8px;font-size:12px;color:#888">備註：${ord.note}</div>`:''}
@@ -730,18 +788,21 @@ async function editOrder(id){
     <div class="check-group" id="eo-docs">${docL.map(([v,l])=>`<label class="check-item ${(data.docs_required||[]).includes(v)?'checked':''}"><input type="checkbox" value="${v}" ${(data.docs_required||[]).includes(v)?'checked':''}> ${l}</label>`).join('')}</div>
     <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:6px;margin-top:10px">熱處理</div>
     <div class="check-group" id="eo-heat">${heatL.map(([v,l])=>`<label class="check-item ${(data.heat_treatment||[]).includes(v)?'checked':''}"><input type="checkbox" value="${v}" ${(data.heat_treatment||[]).includes(v)?'checked':''}> ${l}</label>`).join('')}</div>
+    <div style="margin-top:10px"><label class="check-item" style="display:inline-flex"><input type="checkbox" id="eo-urgent-check" ${data.is_urgent?'checked':''}> 🚨 急件</label></div>
     <div class="form-group" style="margin-top:10px"><label>備註</label><textarea id="eo-note" rows="2">${data.note||''}</textarea></div>`;
-  document.querySelectorAll('#eo-docs input,#eo-heat input').forEach(cb=>{
+  document.querySelectorAll('#eo-docs input,#eo-heat input,#eo-urgent-check').forEach(cb=>{
     cb.addEventListener('change',()=>cb.closest('.check-item').classList.toggle('checked',cb.checked));
   });
   document.getElementById('modal-save-btn').onclick=async()=>{
     const docs=[...document.querySelectorAll('#eo-docs input:checked')].map(c=>c.value);
     const heat=[...document.querySelectorAll('#eo-heat input:checked')].map(c=>c.value);
+    const urgentCheck=document.getElementById('eo-urgent-check');
     await sb.from('orders').update({
       batch_no:document.getElementById('eo-batch').value,customer:document.getElementById('eo-customer').value,
       order_no:document.getElementById('eo-orderno').value,due_date:document.getElementById('eo-due').value||null,
       order_date:document.getElementById('eo-orderdate').value||null,
-      docs_required:docs,heat_treatment:heat,note:document.getElementById('eo-note').value
+      docs_required:docs,heat_treatment:heat,note:document.getElementById('eo-note').value,
+      is_urgent:urgentCheck?urgentCheck.checked:false
     }).eq('id',id);
     toast('✅ 已更新');closeModal();loadOrders();
   };
@@ -773,7 +834,14 @@ async function addItemToOrder(ordId,batch,customer,due){
       <div class="form-group"><label>鋼水溫度</label><input id="ni-watertemp"></div>
       <div class="form-group" style="grid-column:span 2"><label>研磨方式</label><input id="ni-grindmethod"></div>
       <div class="form-group" style="grid-column:span 2"><label>整型需求</label>
-        <select id="ni-shaping"><option value="不需整型">不需整型</option><option value="要整型+有模">要整型＋有整型模</option><option value="要整型+無模">要整型＋無整型模</option></select>
+        <select id="ni-shaping">
+          <option value="不需整型">不需整型</option>
+          <option value="要整型+有模">要整型＋有整型模</option>
+          <option value="要整型+無模">要整型＋無整型模</option>
+          <option value="要整型+合治具">要整型＋合治具</option>
+          <option value="純合治具">純合治具</option>
+        </select>
+        <input id="ni-shaping-note" placeholder="整型備註" style="margin-top:4px">
       </div>
       <div class="form-group"><label>委外</label><input id="ni-outsource"></div>
       <div class="form-group" style="grid-column:span 3"><label>層數注意事項</label><textarea id="ni-layernote" rows="2"></textarea></div>
@@ -838,7 +906,7 @@ async function printOrder(id){
       <td style="text-align:left">${it.product_name||''}</td><td>${it.brand||''}</td><td>${it.material||''}</td>
       <td>${it.order_qty||''}/${it.prod_qty||''}</td>
       <td>${[it.mold_no,it.per_string].filter(Boolean).join('/')}</td>
-      <td>${it.string_count||''}</td><td>${it.layer_count||''}</td><td>${it.furnace_no||''}</td>
+      <td>${it.string_count||''}</td><td>${it.furnace_no||''}</td><td>${it.layer_count||''}</td>
       <td style="text-align:left;font-size:10px">${it.grinding_method||''}</td>
       <td style="font-size:10px">${sh}</td><td>${it.outsource||'✕'}</td>
       <td style="text-align:left;font-size:10px;color:#555">${it.prod_note||''}</td>
@@ -851,11 +919,15 @@ async function printOrder(id){
   body{font-family:'PingFang TC','Microsoft JhengHei',sans-serif;font-size:11px;color:#000;margin:0}
   h1{text-align:center;font-size:16px;margin:0 0 2px}h2{text-align:center;font-size:12px;font-weight:400;margin:0 0 6px}
   .ht{width:100%;border-collapse:collapse;margin-bottom:4px}.ht td{border:1px solid #333;padding:4px 6px}
-  .mt{width:100%;border-collapse:collapse}.mt th,.mt td{border:1px solid #333;padding:4px 5px;text-align:center}
-  .mt th{background:#e8e8e8;font-size:10px}.mt td{min-height:20px}
+  .mt{width:100%;border-collapse:collapse;table-layout:fixed}.mt th,.mt td{border:1px solid #333;padding:4px 5px;text-align:center;overflow:hidden}
+  .mt th{background:#e8e8e8;font-size:10px;position:relative;cursor:col-resize;user-select:none}.mt td{min-height:20px}
+  .resizer{position:absolute;right:0;top:0;width:5px;height:100%;cursor:col-resize;z-index:1}
+  .resizer:hover,.resizing{background:rgba(0,100,255,0.3)}
+  .no-print{text-align:center;margin:8px 0}
+  @media print{.no-print{display:none}}
   .sign{display:flex;justify-content:flex-end;gap:40px;margin-top:8px;font-size:11px}
   .sbox{text-align:center;min-width:80px}.sline{border-bottom:1px solid #333;margin-top:20px}
-  </style></head><body>
+  <\/style><\/head><body>
   <h1>偉晟工業股份有限公司</h1><h2>生 產 流 程 表</h2>
   <table class="ht">
     <tr>
@@ -868,12 +940,24 @@ async function printOrder(id){
       <td colspan="3"><b>熱處理</b>　${hchk('solution_a')}固溶化(A)　${hchk('solution_b')}固溶化(B)　${hchk('anneal_b')}退火(B)　${hchk('normalize_b')}正常化(B)</td>
     </tr>
   </table>
+  <div class="no-print">
+    <button onclick="window.print()" style="background:#1a3a5c;color:#fff;border:none;padding:7px 18px;border-radius:6px;font-size:13px;cursor:pointer;margin-right:10px">🖨 列印</button>
+    <span style="font-size:11px;color:#888">拖曳欄標題右緣可調整寬度</span>
+  </div>
   <table class="mt">
     <thead><tr>
-      <th style="width:18%;text-align:left">品名</th><th style="width:5%">商標</th><th style="width:7%">材質</th>
-      <th style="width:8%">訂購/生產</th><th style="width:8%">方案</th><th style="width:5%">串數</th>
-      <th style="width:5%">殼層數</th><th style="width:6%">爐號</th><th style="width:13%">研磨方式</th>
-      <th style="width:11%">整型</th><th style="width:6%">委外</th><th style="width:10%;text-align:left">備註</th>
+      <th style="width:18%;text-align:left">品名<div class="resizer"></div></th>
+      <th style="width:5%">商標<div class="resizer"></div></th>
+      <th style="width:7%">材質<div class="resizer"></div></th>
+      <th style="width:8%">訂購/生產<div class="resizer"></div></th>
+      <th style="width:8%">方案<div class="resizer"></div></th>
+      <th style="width:5%">串數<div class="resizer"></div></th>
+      <th style="width:6%">爐號<div class="resizer"></div></th>
+      <th style="width:5%">殼層數<div class="resizer"></div></th>
+      <th style="width:11%">研磨方式<div class="resizer"></div></th>
+      <th style="width:10%">整型<div class="resizer"></div></th>
+      <th style="width:6%">委外<div class="resizer"></div></th>
+      <th style="width:10%;text-align:left">備註<div class="resizer"></div></th>
     </tr></thead>
     <tbody>${itemHTML}${empHTML}</tbody>
   </table>
@@ -882,7 +966,28 @@ async function printOrder(id){
     <div class="sbox"><div class="sline"></div>主管</div>
     <div class="sbox"><div class="sline"></div>填表</div>
   </div>
-  </body></html>`;
+  <\/body>
+  <script>
+  // 拖曳調整欄寬
+  let dragging=null,startX=0,startW=0;
+  document.querySelectorAll('.resizer').forEach(r=>{
+    r.addEventListener('mousedown',e=>{
+      dragging=r.parentElement;
+      startX=e.pageX;startW=dragging.offsetWidth;
+      r.classList.add('resizing');
+      e.preventDefault();
+    });
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging) return;
+    const w=Math.max(20,startW+(e.pageX-startX));
+    dragging.style.width=w+'px';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(dragging){dragging.querySelector('.resizer')?.classList.remove('resizing');dragging=null;}
+  });
+  <\/script>
+  </html>`;
   const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),400);
 }
 
@@ -1049,8 +1154,12 @@ async function loadDailyReport(type){
   const tm={assembly:'assembly_reports',dewax:'dewax_reports',casting:'casting_reports',shipping:'shipping_reports'};
   const prefix=pm[type];
   const dateVal=document.getElementById(prefix+'-qdate').value;
+  const qSearch=document.getElementById(prefix+'-qsearch')?.value.trim()||'';
+  const searchVal=document.getElementById(prefix+'-qsearch')?.value.trim()||'';
   let q=sb.from(tm[type]).select('*').order('report_date',{ascending:false}).limit(300);
   if(dateVal) q=q.eq('report_date',dateVal);
+  if(searchVal) q=q.or(`batch_no.ilike.%${searchVal}%,product_name.ilike.%${searchVal}%`);
+  if(qSearch) q=q.or(`batch_no.ilike.%${qSearch}%,product_name.ilike.%${qSearch}%`);
   const {data}=await q;
   const tbody=document.getElementById(prefix+'-tbody');
   if(!data||!data.length){tbody.innerHTML='<tr><td colspan="17" class="empty">尚無資料</td></tr>';if(type==='assembly')document.getElementById('asm-stats').innerHTML='';return;}
@@ -1058,7 +1167,7 @@ async function loadDailyReport(type){
   const dBtn=(tbl,id,t)=>`<button class="btn btn-danger btn-sm" onclick="deleteReport('${tbl}','${id}','${t}')">刪除</button>`;
   if(type==='assembly'){
     tbody.innerHTML=data.map(r=>`<tr>
-      <td>${r.report_date}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.operator||''}</td>
+      <td>${toROC(r.report_date)}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.operator||''}</td>
       <td><span class="badge ${r.order_type==='試樣'?'badge-purple':r.order_type==='庫存單'?'badge-orange':'badge-blue'}">${r.order_type||''}</span></td>
       <td>${r.mold_no||''}${r.mold_no&&r.scheme_per_string?'/':''}${r.scheme_per_string||''}</td>
       <td>${r.string_count||''}</td><td>${r.total||''}</td>
@@ -1069,13 +1178,13 @@ async function loadDailyReport(type){
     document.getElementById('asm-stats').innerHTML=`<div>實單：<b>${realSum}</b> 串</div><div>庫存單：<b>${stockSum}</b> 串</div><div>試樣：<b>${sampleSum}</b> 串</div><div>合計：<b>${realSum+stockSum+sampleSum}</b> 串</div>`;
   } else if(type==='dewax'){
     tbody.innerHTML=data.map(r=>`<tr>
-      <td>${r.report_date}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.operator||''}</td>
+      <td>${toROC(r.report_date)}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.operator||''}</td>
       <td>${r.in_strings||''}</td><td>${r.in_qty||''}</td><td>${r.scrap_strings||''}</td><td>${r.scrap_qty||''}</td><td>${r.out_strings||''}</td><td>${r.out_qty||''}</td>
       <td style="display:flex;gap:4px">${eBtn('dewax_reports',r.id,'dewax')}${dBtn('dewax_reports',r.id,'dewax')}</td>
     </tr>`).join('');
   } else if(type==='casting'){
     tbody.innerHTML=data.map(r=>`<tr>
-      <td>${r.report_date}</td><td>${r.customer||''}</td><td>${r.furnace_no||''}</td><td>${r.batch_no||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.mold_no||''}</td>
+      <td>${toROC(r.report_date)}</td><td>${r.customer||''}</td><td>${r.furnace_no||''}</td><td>${r.batch_no||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td><td>${r.mold_no||''}</td>
       <td>${r.good_strings||''}</td><td>${r.good_qty||''}</td><td>${r.bad_strings||''}</td><td>${r.bad_qty||''}</td>
       <td style="background:#f0fdf4">${r.shell_temp||''}</td><td style="background:#f0fdf4">${r.water_temp||''}</td>
       <td>${r.actual_shell_temp||''}</td><td>${r.actual_water_temp||''}</td>
@@ -1084,7 +1193,7 @@ async function loadDailyReport(type){
     </tr>`).join('');
   } else if(type==='shipping'){
     tbody.innerHTML=data.map(r=>`<tr>
-      <td>${r.report_date}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.brand||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td>
+      <td>${toROC(r.report_date)}</td><td>${r.batch_no||''}</td><td>${r.customer||''}</td><td>${r.brand||''}</td><td>${r.product_name||''}</td><td>${r.material||''}</td>
       <td>${r.total||''}</td><td>${r.pieces||''}</td>
       <td style="display:flex;gap:4px">${eBtn('shipping_reports',r.id,'shipping')}${dBtn('shipping_reports',r.id,'shipping')}</td>
     </tr>`).join('');
@@ -1125,16 +1234,16 @@ async function loadOverview(){
   const weekEnd=new Date();weekEnd.setDate(weekEnd.getDate()+7);
   const weekEndStr=weekEnd.toISOString().slice(0,10);
   const [{data:items},{data:asm},{data:dw},{data:cs},{data:sh}]=await Promise.all([
-    sb.from('order_items').select('*, orders(customer,due_date,order_no)'),
+    sb.from('order_items').select('*, orders(customer,due_date,order_no,is_urgent)'),
     sb.from('assembly_reports').select('item_id,total,batch_no,product_name'),
     sb.from('dewax_reports').select('item_id,out_qty,batch_no,product_name'),
-    sb.from('casting_reports').select('item_id,good_qty,batch_no,product_name'),
+    sb.from('casting_reports').select('item_id,good_qty,bad_qty,batch_no,product_name'),
     sb.from('shipping_reports').select('item_id,total,batch_no,product_name'),
   ]);
   const anySet=(arr)=>{const s=new Set();(arr||[]).forEach(r=>{if(r.item_id)s.add(r.item_id);});return s;};
   const sumMap=(arr,key)=>{const m={};(arr||[]).forEach(r=>{const id=r.item_id||'';m[id]=(m[id]||0)+(parseFloat(r[key])||0);});return m;};
   const asmSet=anySet(asm),dwSet=anySet(dw),csSet=anySet(cs);
-  const asmSum=sumMap(asm,'total'),dwSum=sumMap(dw,'out_qty'),csSum=sumMap(cs,'good_qty'),shSum=sumMap(sh,'total');
+  const asmSum=sumMap(asm,'total'),dwSum=sumMap(dw,'out_qty'),csSum=sumMap(cs,'good_qty'),csBadSum=sumMap(cs,'bad_qty'),shSum=sumMap(sh,'total');
 
   let filtered=(items||[]).filter(it=>{
     if(search&&!it.batch_no?.includes(search)&&!it.product_name?.includes(search)&&!it.orders?.customer?.includes(search)) return false;
@@ -1147,6 +1256,9 @@ async function loadOverview(){
     return !isDone;
   });
 
+  // 急件排最前
+  filtered.sort((a,b)=>(b.orders?.is_urgent?1:0)-(a.orders?.is_urgent?1:0));
+
   const total=filtered.length;
   const late=filtered.filter(it=>it.due_date&&it.due_date<todayStr&&(shSum[it.id]||0)<(it.order_qty||1)).length;
   document.getElementById('ov-stats').innerHTML=`
@@ -1156,40 +1268,51 @@ async function loadOverview(){
       <div style="font-size:24px;font-weight:700;color:#991b1b">${late}</div><div style="font-size:12px;color:#888">逾期未完成</div></div>`;
 
   const tbody=document.getElementById('ov-tbody');
+  filtered.sort((a,b)=>(b.orders?.is_urgent?1:0)-(a.orders?.is_urgent?1:0));
   if(!filtered.length){tbody.innerHTML='<tr><td colspan="12" class="empty">尚無資料</td></tr>';return;}
   tbody.innerHTML=filtered.map(it=>{
     const id=it.id;
     const hasAsm=asmSet.has(id),hasDw=dwSet.has(id),hasCs=csSet.has(id);
     const orderQty=it.order_qty||0,prodQty=it.prod_qty||0;
-    const shV=shSum[id]||0,asmV=asmSum[id]||0,dwV=dwSum[id]||0,csV=csSum[id]||0;
+    const shV=shSum[id]||0,asmV=asmSum[id]||0,dwV=dwSum[id]||0,csV=csSum[id]||0,csBad=csBadSum[id]||0;
     const pct=orderQty>0?Math.min(100,Math.round(shV/orderQty*100)):0;
     const isLate=it.due_date&&it.due_date<todayStr&&shV<orderQty;
     const isDone=orderQty>0&&shV>=orderQty;
-    // current stage
-    let stage='未開始';
+    const isUrgent=it.orders?.is_urgent;
+    // stage cells with counts
+    const stageCell=(hasIt,val,bad)=>{
+      if(!hasIt) return '<span class="badge badge-gray">—</span>';
+      let s=`<span class="badge badge-green">${val||'✓'}</span>`;
+      if(bad>0) s+=` <span style="color:#c0392b;font-size:11px;font-weight:600">-${bad}</span>`;
+      return s;
+    };
     if(isDone) stage='完成';
     else if(hasCs) stage='鑄造中';
     else if(hasDw) stage='脫蠟中';
     else if(hasAsm) stage='組樹中';
     const stageBadge={'未開始':'<span class="badge badge-gray">未開始</span>','組樹中':'<span class="badge badge-purple">🌳 組樹中</span>','脫蠟中':'<span class="badge badge-orange">🔥 脫蠟中</span>','鑄造中':'<span class="badge badge-blue">⚙️ 鑄造中</span>','完成':'<span class="badge badge-green">✅ 完成</span>'}[stage]||'';
-    // stage columns: show cumulative count
-    const stageCell=(hasIt,val)=>hasIt?`<span class="badge badge-green">${val||'✓'}</span>`:`<span class="badge badge-gray">—</span>`;
+    const scBadge=(hasIt,val,bad)=>{
+      if(!hasIt) return '<span class="badge badge-gray">—</span>';
+      let s=`<span class="badge badge-green">${val||'✓'}</span>`;
+      if(bad>0) s+=` <span style="color:#c0392b;font-weight:700;font-size:11px">-${bad}</span>`;
+      return s;
+    };
     const progressBar=`<div style="display:flex;align-items:center;gap:6px">
       <div style="flex:1;background:#e5e7eb;border-radius:4px;height:8px;min-width:50px">
         <div style="width:${pct}%;height:8px;border-radius:4px;background:${pct>=100?'#22c55e':pct>=60?'#f59e0b':'#ef4444'}"></div>
       </div>
       <span style="font-size:11px;color:#888;white-space:nowrap">${pct}%</span>
     </div>`;
-    return `<tr style="${isLate?'background:#fff8f8':''}">
-      <td><b>${it.batch_no||''}</b></td>
+    return `<tr style="${isLate?'background:#fff8f8':isUrgent?'background:#fff5f0':''}">
+      <td><b>${it.batch_no||''}</b>${isUrgent?' <span class="badge badge-red" style="font-size:11px">🚨急</span>':''}</td>
       <td>${it.orders?.customer||''}</td>
       <td>${it.product_name||''}</td>
       <td>${it.material||''}</td>
       <td style="white-space:nowrap">${orderQty||'—'}/${prodQty||'—'}</td>
-      <td style="${isLate?'color:#c00;font-weight:600':''}">  ${it.orders?.due_date||it.due_date||''}</td>
-      <td style="text-align:center">${stageCell(hasAsm,asmV)}</td>
-      <td style="text-align:center">${stageCell(hasDw,dwV)}</td>
-      <td style="text-align:center">${stageCell(hasCs,csV)}</td>
+      <td style="${isLate?'color:#c00;font-weight:600':''}">  ${toROC(it.orders?.due_date||it.due_date)}</td>
+      <td style="text-align:center">${scBadge(hasAsm,asmV,0)}</td>
+      <td style="text-align:center">${scBadge(hasDw,dwV,0)}</td>
+      <td style="text-align:center">${scBadge(hasCs,csV,csBad)}</td>
       <td style="text-align:center">${shV?`<span class="badge badge-green">${shV}</span>`:`<span class="badge badge-gray">—</span>`}</td>
       <td style="min-width:110px">${progressBar}</td>
       <td>${stageBadge}</td>
