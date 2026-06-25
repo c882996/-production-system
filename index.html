@@ -1309,16 +1309,6 @@ async function loadOverview(){
 
   const total=filtered.length;
   const late=filtered.filter(it=>it.due_date&&it.due_date<todayStr&&(shSum[it.id]||0)<(it.order_qty||1)).length;
-  // Update stat cards
-  const allItems=items||[];
-  const todayS=todayStr;
-  const wEnd=weekEndStr;
-  const monthEnd=todayS.slice(0,7)+'-'+(new Date(new Date(todayS).getFullYear(),new Date(todayS).getMonth()+1,0).getDate()).toString().padStart(2,'0');
-  document.getElementById('cnt-all').textContent=allItems.length;
-  document.getElementById('cnt-late').textContent=allItems.filter(it=>it.due_date&&it.due_date<todayS&&(shSum[it.id]||0)<(it.order_qty||1)).length;
-  document.getElementById('cnt-week').textContent=allItems.filter(it=>it.due_date&&it.due_date>=todayS&&it.due_date<=wEnd&&(shSum[it.id]||0)<(it.order_qty||1)).length;
-  document.getElementById('cnt-month').textContent=allItems.filter(it=>it.due_date&&it.due_date>=todayS&&it.due_date<=monthEnd&&(shSum[it.id]||0)<(it.order_qty||1)).length;
-  document.getElementById('cnt-urgent').textContent=allItems.filter(it=>it.orders?.is_urgent&&(shSum[it.id]||0)<(it.order_qty||1)).length;
 
   const tbody=document.getElementById('ov-tbody');
   filtered.sort((a,b)=>(b.orders?.is_urgent?1:0)-(a.orders?.is_urgent?1:0));
