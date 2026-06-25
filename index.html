@@ -516,6 +516,7 @@ async function loadProducts(){
             <td style="font-size:11px">${p.scheme_note||''}</td><td>${p.unit_weight||''}</td><td>${p.string_weight||''}</td><td>${p.layer_count||''}</td>
             <td>${p.grinding_method||''}</td>
             <td>${(()=>{const m={'不需整型':'<span class="badge badge-gray">✕</span>','要整型+有模':'<span class="badge badge-green">有模</span>','要整型+無模':'<span class="badge badge-yellow">無模</span>','要整型+合治具':'<span class="badge badge-blue">合治具</span>','純合治具':'<span class="badge badge-purple">純合治具</span>'};return m[p.need_shaping]||'<span class="badge badge-gray">✕</span>';})()}</td>
+            <td style="font-size:11px;color:#555">${p.shaping_note||''}</td>
             <td>${p.shell_temp||''}</td><td>${p.water_temp||''}</td>
             <td style="max-width:140px;font-size:11px">${p.layer_note||''}</td>
             <td style="max-width:160px;font-size:11px;color:#555">${p.note||''}</td>
