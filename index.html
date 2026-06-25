@@ -569,6 +569,7 @@ async function editProduct(id){
           <option value="要整型+合治具" ${p.need_shaping==='要整型+合治具'?'selected':''}>要整型＋合治具</option>
           <option value="純合治具" ${p.need_shaping==='純合治具'?'selected':''}>純合治具</option>
         </select>
+        <input id="ep-shaping-note" style="margin-top:6px" value="${p.shaping_note||''}" placeholder="整型備註">
       </div>
       <div class="form-group" style="grid-column:span 4"><label>層數注意事項</label><textarea id="ep-layernote" rows="2">${p.layer_note||''}</textarea></div>
       <div class="form-group" style="grid-column:span 4"><label>備註（委外/品檢注意事項）</label><textarea id="ep-note" rows="2">${p.note||''}</textarea></div>
@@ -585,7 +586,8 @@ async function editProduct(id){
       layer_count:parseInt(document.getElementById('ep-layers').value)||null,layer_note:document.getElementById('ep-layernote').value,
       note:document.getElementById('ep-note').value,
       shell_temp:document.getElementById('ep-shelltemp').value,water_temp:document.getElementById('ep-watertemp').value,
-      grinding_method:gv,need_shaping:document.getElementById('ep-shaping').value
+      grinding_method:gv,need_shaping:document.getElementById('ep-shaping').value,
+      shaping_note:document.getElementById('ep-shaping-note')?.value.trim()||''
     }).eq('id',id);
     toast('✅ 已更新');closeModal();loadProducts();
   };
@@ -654,7 +656,7 @@ function addOrdItem(){
         <div class="form-group"><label>一串幾個</label><input class="oi-perstring" type="number" oninput="calcStrings(document.getElementById('ord-item-${i}'))"></div>
         <div class="form-group"><label>方案備註</label><input class="oi-schemenote" placeholder="方案備註"></div>
         <div class="form-group"><label>串數（自動計算）</label><input class="oi-strings" type="number" style="background:#f5f5f5"></div>
-        <div class="form-group"><label>殼層數</label><input class="oi-layers" type="number"></div>
+        <div class="form-group"><label>殼層數</label><input class="oi-layers" placeholder="如 5半"></div>
         <div class="form-group"><label>爐號</label><input class="oi-furnaceno" placeholder="爐號"></div>
         <div class="form-group"><label>燒結溫度</label><input class="oi-shelltemp" placeholder="從產品帶入"></div>
         <div class="form-group"><label>鋼水溫度</label><input class="oi-watertemp" placeholder="從產品帶入"></div>
@@ -667,7 +669,7 @@ function addOrdItem(){
             <option value="要整型+合治具">要整型＋合治具</option>
             <option value="純合治具">純合治具</option>
           </select>
-          <input class="oi-shaping-note" placeholder="整型備註" style="margin-top:4px">
+          <input class="oi-shapingnote" placeholder="整型備註" style="margin-top:4px">
         </div>
         <div class="form-group"><label>委外</label><input class="oi-outsource" placeholder="無則留空"></div>
         <div class="form-group" style="grid-column:span 3"><label>層數注意事項</label><textarea class="oi-layernote" rows="2"></textarea></div>
@@ -704,7 +706,7 @@ async function saveOrder(){
     mold_no:row.querySelector('.oi-mold').value.trim(),
     per_string:parseInt(row.querySelector('.oi-perstring').value)||null,
     string_count:parseInt(row.querySelector('.oi-strings').value)||null,
-    layer_count:parseInt(row.querySelector('.oi-layers').value)||null,
+    layer_count:row.querySelector('.oi-layers')?.value.trim()||null,
     order_qty:parseInt(row.querySelector('.oi-orderqty').value)||null,
     prod_qty:parseInt(row.querySelector('.oi-prodqty').value)||null,
     furnace_no:row.querySelector('.oi-furnaceno').value.trim(),
@@ -855,7 +857,7 @@ async function addItemToOrder(ordId,batch,customer,due){
       <div class="form-group"><label>一串幾個</label><input id="ni-perstring" type="number" oninput="calcModalStr()"></div>
       <div class="form-group"><label>方案備註</label><input id="ni-schemenote" placeholder="方案備註"></div>
       <div class="form-group"><label>串數(自動)</label><input id="ni-strings" type="number" style="background:#f5f5f5"></div>
-      <div class="form-group"><label>殼層數</label><input id="ni-layers" type="number"></div>
+      <div class="form-group"><label>殼層數</label><input id="ni-layers" placeholder="如 5半"></div>
       <div class="form-group"><label>爐號</label><input id="ni-furnaceno"></div>
       <div class="form-group"><label>燒結溫度</label><input id="ni-shelltemp"></div>
       <div class="form-group"><label>鋼水溫度</label><input id="ni-watertemp"></div>
@@ -868,7 +870,7 @@ async function addItemToOrder(ordId,batch,customer,due){
           <option value="要整型+合治具">要整型＋合治具</option>
           <option value="純合治具">純合治具</option>
         </select>
-        <input id="ni-shaping-note" placeholder="整型備註" style="margin-top:4px">
+        <input id="ni-shapingnote" placeholder="整型備註" style="margin-top:4px">
       </div>
       <div class="form-group"><label>委外</label><input id="ni-outsource"></div>
       <div class="form-group" style="grid-column:span 3"><label>層數注意事項</label><textarea id="ni-layernote" rows="2"></textarea></div>
@@ -884,7 +886,7 @@ async function addItemToOrder(ordId,batch,customer,due){
       mold_no:document.getElementById('ni-mold').value.trim(),
       per_string:parseInt(document.getElementById('ni-perstring').value)||null,
       string_count:parseInt(document.getElementById('ni-strings').value)||null,
-      layer_count:parseInt(document.getElementById('ni-layers').value)||null,
+      layer_count:document.getElementById('ni-layers')?.value.trim()||null,
       order_qty:parseInt(document.getElementById('ni-orderqty').value)||null,
       prod_qty:parseInt(document.getElementById('ni-prodqty').value)||null,
       furnace_no:document.getElementById('ni-furnaceno').value.trim(),
@@ -892,7 +894,7 @@ async function addItemToOrder(ordId,batch,customer,due){
       water_temp:document.getElementById('ni-watertemp').value.trim(),
       grinding_method:document.getElementById('ni-grindmethod').value.trim(),
       need_shaping:document.getElementById('ni-shaping').value,
-      shaping_note:document.getElementById('ni-shaping-note')?.value.trim()||'',
+      shaping_note:document.getElementById('ni-shapingnote')?.value.trim()||'',
       outsource:document.getElementById('ni-outsource').value.trim(),
       layer_note:document.getElementById('ni-layernote').value.trim(),
       prod_note:document.getElementById('ni-prodnote').value.trim(),due_date:due||null
@@ -910,7 +912,9 @@ function fillModalProd(sel,prods){
   s('ni-schemenote').value=p.scheme_note||'';
   s('ni-layers').value=p.layer_count||'';s('ni-shelltemp').value=p.shell_temp||'';
   s('ni-watertemp').value=p.water_temp||'';s('ni-grindmethod').value=p.grinding_method||'';
-  s('ni-shaping').value=p.need_shaping||'不需整型';s('ni-shaping-note').value=p.shaping_note||'';
+  s('ni-shaping').value=p.need_shaping||'不需整型';
+  s('ni-shapingnote').value=p.shaping_note||'';
+  s('ni-layers').value=p.layer_count||'';
   s('ni-layers').value=p.layer_count||'';
   s('ni-layernote').value=p.layer_note||'';
   s('ni-prodnote').value=p.note||'';
