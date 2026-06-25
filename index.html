@@ -113,7 +113,7 @@ tr:hover td{background:#fafbff}
   <div class="filter-row">
     <div class="form-group"><label>篩選</label>
       <select id="ov-filter" onchange="loadOverview()">
-        <option value="all">全部進行中</option>
+        <option value="all">全部（含完成）</option>
         <option value="thisweek">本週到期</option>
         <option value="late">逾期未完成</option>
         <option value="done">已完成</option>
@@ -123,8 +123,24 @@ tr:hover td{background:#fafbff}
     <button class="btn btn-primary" onclick="loadOverview()">查詢</button>
     <button class="btn btn-export" onclick="exportExcel()">📥 匯出 Excel</button>
   </div>
-  <!-- 簡單統計 -->
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px" id="ov-stats"></div>
+  <!-- 統計卡片 -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <div onclick="setOvFilter('all')" id="stat-all" style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #4da6ff;cursor:pointer;min-width:110px;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.08)'">
+      <div id="cnt-all" style="font-size:24px;font-weight:700;color:#1a3a5c">—</div><div style="font-size:12px;color:#888">總品項數</div>
+    </div>
+    <div onclick="setOvFilter('late')" id="stat-late" style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #ef4444;cursor:pointer;min-width:110px;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.08)'">
+      <div id="cnt-late" style="font-size:24px;font-weight:700;color:#991b1b">—</div><div style="font-size:12px;color:#888">逾期未完成</div>
+    </div>
+    <div onclick="setOvFilter('thisweek')" id="stat-week" style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #f59e0b;cursor:pointer;min-width:110px;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.08)'">
+      <div id="cnt-week" style="font-size:24px;font-weight:700;color:#854d0e">—</div><div style="font-size:12px;color:#888">交期本週</div>
+    </div>
+    <div onclick="setOvFilter('thismonth')" id="stat-month" style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #8b5cf6;cursor:pointer;min-width:110px;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.08)'">
+      <div id="cnt-month" style="font-size:24px;font-weight:700;color:#5b21b6">—</div><div style="font-size:12px;color:#888">交期本月</div>
+    </div>
+    <div onclick="setOvFilter('urgent')" id="stat-urgent" style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #ef4444;cursor:pointer;min-width:110px;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.08)'">
+      <div id="cnt-urgent" style="font-size:24px;font-weight:700;color:#991b1b">—</div><div style="font-size:12px;color:#888">🚨 急件</div>
+    </div>
+  </div>
   <!-- 進度表 -->
   <div class="card">
     <div class="table-wrap">
@@ -209,8 +225,8 @@ tr:hover td{background:#fafbff}
       <div class="form-group"><label>材質</label><input id="pr-material" placeholder="如 304"></div>
       <div class="form-group"><label>模頭號</label><input id="pr-mold" placeholder="如 14"></div>
       <div class="form-group"><label>一串幾個</label><input id="pr-perstring" type="number" placeholder="如 4"></div>
-      <div class="form-group"><label>單重(g)</label><input id="pr-unitweight" placeholder="單重"></div>
-      <div class="form-group"><label>串重(g)</label><input id="pr-stringweight" placeholder="串重"></div>
+      <div class="form-group"><label>單重(kg)</label><input id="pr-unitweight" placeholder="單重"></div>
+      <div class="form-group"><label>串重(kg)</label><input id="pr-stringweight" placeholder="串重"></div>
       <div class="form-group"><label>殼層數</label>
         <select id="pr-layers" onchange="toggleLayerCustom(this)">
           <option value="">— 選擇 —</option>
@@ -492,7 +508,7 @@ async function loadProducts(){
       </div>
       <div class="customer-body">
         <div class="table-wrap"><table>
-          <thead><tr><th>品名</th><th>材質</th><th>模頭號</th><th>一串幾個</th><th>單重</th><th>串重</th><th>殼層數</th><th>研磨方式</th><th>整型需求</th><th>整型備註</th><th>燒結溫度</th><th>鋼水溫度</th><th>層數注意</th><th>備註</th><th>操作</th></tr></thead>
+          <thead><tr><th>品名</th><th>材質</th><th>模頭號</th><th>一串幾個</th><th>單重(kg)</th><th>串重(kg)</th><th>殼層數</th><th>研磨方式</th><th>整型需求</th><th>整型備註</th><th>燒結溫度</th><th>鋼水溫度</th><th>層數注意</th><th>備註</th><th>操作</th></tr></thead>
           <tbody>${prods.map(p=>`<tr>
             <td><b>${p.product_name}</b></td><td>${p.material||''}</td><td>${p.mold_no||''}</td><td>${p.per_string||''}</td>
             <td>${p.unit_weight||''}</td><td>${p.string_weight||''}</td><td>${p.layer_count||''}</td>
@@ -526,8 +542,8 @@ async function editProduct(id){
       <div class="form-group"><label>材質</label><input id="ep-material" value="${p.material||''}"></div>
       <div class="form-group"><label>模頭號</label><input id="ep-mold" value="${p.mold_no||''}"></div>
       <div class="form-group"><label>一串幾個</label><input id="ep-perstring" type="number" value="${p.per_string||''}"></div>
-      <div class="form-group"><label>單重</label><input id="ep-unitweight" value="${p.unit_weight||''}"></div>
-      <div class="form-group"><label>串重</label><input id="ep-stringweight" value="${p.string_weight||''}"></div>
+      <div class="form-group"><label>單重(kg)</label><input id="ep-unitweight" value="${p.unit_weight||''}"></div>
+      <div class="form-group"><label>串重(kg)</label><input id="ep-stringweight" value="${p.string_weight||''}"></div>
       <div class="form-group"><label>殼層數</label><input id="ep-layers" type="number" value="${p.layer_count||''}"></div>
       <div class="form-group"><label>燒結溫度</label><input id="ep-shelltemp" value="${p.shell_temp||''}"></div>
       <div class="form-group"><label>鋼水溫度</label><input id="ep-watertemp" value="${p.water_temp||''}"></div>
@@ -599,6 +615,8 @@ function onOrdProdSelect(sel,i){
   row.querySelector('.oi-watertemp').value=p.water_temp||'';
   row.querySelector('.oi-grindmethod').value=p.grinding_method||'';
   row.querySelector('.oi-shaping').value=p.need_shaping||'不需整型';
+  row.querySelector('.oi-shapingnote').value=p.shaping_note||'';
+  row.querySelector('.oi-layers').value=p.layer_count||'';
   row.querySelector('.oi-layernote').value=p.layer_note||'';
   row.querySelector('.oi-prodnote').value=p.note||'';
   calcStrings(row);
@@ -647,6 +665,7 @@ function addOrdItem(){
           <input class="oi-shaping-note" placeholder="整型備註" style="margin-top:4px">
         </div>
         <div class="form-group"><label>委外</label><input class="oi-outsource" placeholder="無則留空"></div>
+        <div class="form-group" style="grid-column:span 2"><label>方案備註</label><input class="oi-schemenote" placeholder="方案相關備註"></div>
         <div class="form-group" style="grid-column:span 3"><label>層數注意事項</label><textarea class="oi-layernote" rows="2"></textarea></div>
         <div class="form-group" style="grid-column:span 4"><label>備註（委外/品檢注意）</label><textarea class="oi-prodnote" rows="2" placeholder="從產品資料帶入"></textarea></div>
       </div>
@@ -689,7 +708,9 @@ async function saveOrder(){
     water_temp:row.querySelector('.oi-watertemp').value.trim(),
     grinding_method:row.querySelector('.oi-grindmethod').value.trim(),
     need_shaping:row.querySelector('.oi-shaping').value,
+    shaping_note:row.querySelector('.oi-shapingnote')?.value.trim()||'',
     outsource:row.querySelector('.oi-outsource').value.trim(),
+    scheme_note:row.querySelector('.oi-schemenote')?.value.trim()||'',
     layer_note:row.querySelector('.oi-layernote').value.trim(),
     prod_note:row.querySelector('.oi-prodnote').value.trim(),
     due_date:document.getElementById('ord-due').value||null
@@ -724,7 +745,8 @@ async function loadOrders(){
         <td><b>${it.product_name||''}</b></td><td>${it.brand||''}</td><td>${it.material||''}</td>
         <td>${it.order_qty||''}/${it.prod_qty||''}</td>
         <td>${[it.mold_no,it.per_string].filter(Boolean).join('/')}</td>
-        <td>${it.string_count||''}</td><td>${it.furnace_no||''}</td><td>${it.layer_count||''}</td>
+        <td style="font-size:11px">${it.scheme_note||''}</td>
+        <td>${it.string_count||''}</td><td>${it.furnace_no||''}</td><td style="text-align:left;font-size:10px">${it.scheme_note||''}</td><td>${it.layer_count||''}</td>
         <td>${it.grinding_method||''}</td><td>${shBadge}</td>
         <td>${it.outsource||'<span class="badge badge-gray">✕</span>'}</td>
         <td>${it.shell_temp||''}</td><td>${it.water_temp||''}</td>
@@ -844,6 +866,7 @@ async function addItemToOrder(ordId,batch,customer,due){
         <input id="ni-shaping-note" placeholder="整型備註" style="margin-top:4px">
       </div>
       <div class="form-group"><label>委外</label><input id="ni-outsource"></div>
+      <div class="form-group" style="grid-column:span 2"><label>方案備註</label><input id="ni-schemenote" placeholder="方案備註"></div>
       <div class="form-group" style="grid-column:span 3"><label>層數注意事項</label><textarea id="ni-layernote" rows="2"></textarea></div>
       <div class="form-group" style="grid-column:span 4"><label>備註（委外/品檢注意）</label><textarea id="ni-prodnote" rows="2"></textarea></div>
     </div>`;
@@ -865,6 +888,7 @@ async function addItemToOrder(ordId,batch,customer,due){
       water_temp:document.getElementById('ni-watertemp').value.trim(),
       grinding_method:document.getElementById('ni-grindmethod').value.trim(),
       need_shaping:document.getElementById('ni-shaping').value,
+      shaping_note:document.getElementById('ni-shaping-note')?.value.trim()||'',
       outsource:document.getElementById('ni-outsource').value.trim(),
       layer_note:document.getElementById('ni-layernote').value.trim(),
       prod_note:document.getElementById('ni-prodnote').value.trim(),due_date:due||null
@@ -881,7 +905,9 @@ function fillModalProd(sel,prods){
   s('ni-mold').value=p.mold_no||'';s('ni-perstring').value=p.per_string||'';
   s('ni-layers').value=p.layer_count||'';s('ni-shelltemp').value=p.shell_temp||'';
   s('ni-watertemp').value=p.water_temp||'';s('ni-grindmethod').value=p.grinding_method||'';
-  s('ni-shaping').value=p.need_shaping||'不需整型';s('ni-layernote').value=p.layer_note||'';
+  s('ni-shaping').value=p.need_shaping||'不需整型';s('ni-shaping-note').value=p.shaping_note||'';
+  s('ni-layers').value=p.layer_count||'';
+  s('ni-layernote').value=p.layer_note||'';
   s('ni-prodnote').value=p.note||'';
   calcModalStr();
 }
@@ -906,9 +932,9 @@ async function printOrder(id){
       <td style="text-align:left">${it.product_name||''}</td><td>${it.brand||''}</td><td>${it.material||''}</td>
       <td>${it.order_qty||''}/${it.prod_qty||''}</td>
       <td>${[it.mold_no,it.per_string].filter(Boolean).join('/')}</td>
-      <td>${it.string_count||''}</td><td>${it.furnace_no||''}</td><td>${it.layer_count||''}</td>
+      <td>${it.string_count||''}</td><td>${it.furnace_no||''}</td><td style="text-align:left;font-size:10px">${it.scheme_note||''}</td><td>${it.layer_count||''}</td>
       <td style="text-align:left;font-size:10px">${it.grinding_method||''}</td>
-      <td style="font-size:10px">${sh}</td><td>${it.outsource||'✕'}</td>
+      <td style="font-size:10px">${sh}${it.shaping_note?' ('+it.shaping_note+')':''}</td><td>${it.outsource||'✕'}</td>
       <td style="text-align:left;font-size:10px;color:#555">${it.prod_note||''}</td>
     </tr>`;
   }).join('');
@@ -1227,16 +1253,35 @@ async function editReport(table,id,type){
   openModal();
 }
 
+function renderDayMap(dayObj, badKey){
+  if(!dayObj) return '<span style="color:#ccc">—</span>';
+  const dates=Object.keys(dayObj).sort();
+  return dates.map(d=>{
+    const good=dayObj[d].good||0;
+    const bad=dayObj[d].bad||0;
+    const dateStr=toROC(d);
+    let html=`<div style="white-space:nowrap"><span style="color:#888;font-size:10px">${dateStr}</span> <span style="color:#166534;font-weight:600">${good}</span>`;
+    if(bad>0) html+=` <span style="color:#ef4444;font-weight:600">-${bad}</span>`;
+    html+='</div>';
+    return html;
+  }).join('');
+}
+function setOvFilter(val){
+  document.getElementById('ov-filter').value=val;
+  loadOverview();
+}
 async function loadOverview(){
   const filter=document.getElementById('ov-filter').value;
   const search=document.getElementById('ov-search').value.trim();
   const todayStr=today();
   const weekEnd=new Date();weekEnd.setDate(weekEnd.getDate()+7);
   const weekEndStr=weekEnd.toISOString().slice(0,10);
+  const monthEnd=new Date();monthEnd.setMonth(monthEnd.getMonth()+1);monthEnd.setDate(0);
+  const monthEndStr=monthEnd.toISOString().slice(0,10);
   const [{data:items},{data:asm},{data:dw},{data:cs},{data:sh}]=await Promise.all([
     sb.from('order_items').select('*, orders(customer,due_date,order_no,is_urgent)'),
     sb.from('assembly_reports').select('item_id,total,batch_no,product_name'),
-    sb.from('dewax_reports').select('item_id,out_qty,batch_no,product_name'),
+    sb.from('dewax_reports').select('item_id,out_qty,scrap_qty,batch_no,product_name'),
     sb.from('casting_reports').select('item_id,good_qty,bad_qty,batch_no,product_name'),
     sb.from('shipping_reports').select('item_id,total,batch_no,product_name'),
   ]);
@@ -1251,9 +1296,12 @@ async function loadOverview(){
     const isDone=orderQty>0&&shV>=orderQty;
     const isLate=it.due_date&&it.due_date<todayStr&&!isDone;
     if(filter==='done') return isDone;
+    if(filter==='inprogress') return !isDone;
     if(filter==='late') return isLate;
+    if(filter==='urgent') return it.orders?.is_urgent&&!isDone;
     if(filter==='thisweek') return it.due_date&&it.due_date>=todayStr&&it.due_date<=weekEndStr&&!isDone;
-    return !isDone;
+    if(filter==='thismonth') return it.due_date&&it.due_date>=todayStr&&it.due_date<=monthEndStr&&!isDone;
+    return true; // all
   });
 
   // 急件排最前
@@ -1261,11 +1309,16 @@ async function loadOverview(){
 
   const total=filtered.length;
   const late=filtered.filter(it=>it.due_date&&it.due_date<todayStr&&(shSum[it.id]||0)<(it.order_qty||1)).length;
-  document.getElementById('ov-stats').innerHTML=`
-    <div style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #4da6ff">
-      <div style="font-size:24px;font-weight:700;color:#1a3a5c">${total}</div><div style="font-size:12px;color:#888">顯示品項數</div></div>
-    <div style="background:#fff;border-radius:10px;padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-top:3px solid #ef4444">
-      <div style="font-size:24px;font-weight:700;color:#991b1b">${late}</div><div style="font-size:12px;color:#888">逾期未完成</div></div>`;
+  // Update stat cards
+  const allItems=items||[];
+  const todayS=todayStr;
+  const wEnd=weekEndStr;
+  const monthEnd=todayS.slice(0,7)+'-'+(new Date(new Date(todayS).getFullYear(),new Date(todayS).getMonth()+1,0).getDate()).toString().padStart(2,'0');
+  document.getElementById('cnt-all').textContent=allItems.length;
+  document.getElementById('cnt-late').textContent=allItems.filter(it=>it.due_date&&it.due_date<todayS&&(shSum[it.id]||0)<(it.order_qty||1)).length;
+  document.getElementById('cnt-week').textContent=allItems.filter(it=>it.due_date&&it.due_date>=todayS&&it.due_date<=wEnd&&(shSum[it.id]||0)<(it.order_qty||1)).length;
+  document.getElementById('cnt-month').textContent=allItems.filter(it=>it.due_date&&it.due_date>=todayS&&it.due_date<=monthEnd&&(shSum[it.id]||0)<(it.order_qty||1)).length;
+  document.getElementById('cnt-urgent').textContent=allItems.filter(it=>it.orders?.is_urgent&&(shSum[it.id]||0)<(it.order_qty||1)).length;
 
   const tbody=document.getElementById('ov-tbody');
   filtered.sort((a,b)=>(b.orders?.is_urgent?1:0)-(a.orders?.is_urgent?1:0));
